@@ -1,0 +1,18 @@
+{
+  "name": "Acción de Personal SEKUNET",
+  "short_name": "Acciones RH",
+  "description": "Formulario inteligente y firma digital para Acciones de Personal",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f3f4f6",
+  "theme_color": "#2563eb",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/icon-app-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
