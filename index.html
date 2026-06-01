@@ -2,7 +2,16 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  
+  <!-- PWA / App Móvil Meta Tags -->
+  <meta name="theme-color" content="#2563eb" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Acciones RH" />
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="apple-touch-icon" href="/icon-app-512.png" />
+  
   <title>Acción de Personal</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./style.css" />
@@ -12,7 +21,7 @@
   <!-- WIZARD UI -->
   <main id="wizard-container" class="active">
     <header class="wizard-header">
-      <img src="./Formulario.png" alt="Logo" class="logo-preview" style="max-height: 40px; object-fit: contain; object-position: left; opacity: 0; display: none;" />
+      <img src="./logoTiendaHD.png" alt="Logo Premium" class="logo-preview" />
       <h1>Acción de Personal</h1>
       <div class="progress-bar">
         <div class="progress-fill" id="progress-fill"></div>
@@ -26,27 +35,36 @@
         <h2>Datos del Colaborador</h2>
         <div class="form-group">
           <label for="empresa">Compañía</label>
-          <input type="text" id="empresa" value="SEKUNET" readonly />
+          <input type="text" id="empresa" />
         </div>
         <div class="form-group">
           <label for="cedula">Cédula</label>
-          <input type="text" id="cedula" placeholder="Ej. 2-0539-0118" />
+          <input type="text" id="cedula" />
         </div>
         <div class="form-group">
           <label for="nombre">Nombre</label>
-          <input type="text" id="nombre" placeholder="Nombre completo" />
+          <input type="text" id="nombre" />
         </div>
         <div class="form-group">
           <label for="centro_funcional">Centro Funcional</label>
-          <input type="text" id="centro_funcional" placeholder="Centro funcional" />
+          <select id="centro_funcional">
+            <option value="">Seleccionar...</option>
+            <option value="add">-- Agregar nuevo --</option>
+          </select>
         </div>
         <div class="form-group">
           <label for="codigo_puesto">Código Puesto</label>
-          <input type="text" id="codigo_puesto" placeholder="Código de puesto" />
+          <select id="codigo_puesto">
+            <option value="">Seleccionar...</option>
+            <option value="add">-- Agregar nuevo --</option>
+          </select>
         </div>
         <div class="form-group">
           <label for="nombre_puesto">Nombre del Puesto</label>
-          <input type="text" id="nombre_puesto" placeholder="Ej. Soporte Técnico" />
+          <select id="nombre_puesto">
+            <option value="">Seleccionar...</option>
+            <option value="add">-- Agregar nuevo --</option>
+          </select>
         </div>
       </section>
 
@@ -99,7 +117,7 @@
         </div>
         <div class="form-group">
           <label for="salario_mensual">Salario Mensual</label>
-          <input type="text" id="salario_mensual" placeholder="0,00" />
+          <input type="text" id="salario_mensual" />
         </div>
         <div class="form-group">
           <label for="observaciones">Observaciones</label>
@@ -112,15 +130,18 @@
     <div class="wizard-footer">
       <button id="btn-prev" class="btn btn-secondary" disabled>Anterior</button>
       <button id="btn-next" class="btn btn-primary">Siguiente</button>
-      <button id="btn-preview" class="btn btn-primary" style="display: none;">Ver Documento</button>
+      <button id="btn-preview" class="btn btn-primary" style="display: none;">🔍 Vista Previa</button>
     </div>
   </main>
 
   <!-- FINAL DOCUMENT PREVIEW (Mimics Image) -->
   <main id="preview-container">
-    <div class="preview-actions">
+    <div class="preview-actions" style="position: relative; max-width: 100%;">
       <button id="btn-back-wizard" class="btn btn-secondary">← Volver</button>
-      <button id="btn-share" class="btn btn-success">Generar y Compartir</button>
+      <div style="display: flex; gap: 10px;">
+        <button id="btn-view-pdf" class="btn btn-primary" style="background: var(--doc-blue); box-shadow: none;">📄 Ver PDF</button>
+        <button id="btn-share" class="btn btn-success">Generar y Compartir</button>
+      </div>
     </div>
     
     <div id="document-wrapper">
@@ -128,8 +149,7 @@
         <!-- Encabezado -->
         <div class="doc-header">
           <div class="logo-box">
-            <!-- Emulando el logo recortando la imagen original con CSS -->
-            <div class="logo-sekunet"></div>
+            <img src="./logoTiendaHD.png" alt="Logo" />
           </div>
           <div class="title-box">
             <h2>ACCIÓN DE PERSONAL</h2>
@@ -138,6 +158,14 @@
         
         <!-- Info Cabecera -->
         <table class="doc-table top-table">
+          <colgroup>
+            <col style="width: 15%;">
+            <col style="width: 18.33%;">
+            <col style="width: 15%;">
+            <col style="width: 18.33%;">
+            <col style="width: 15%;">
+            <col style="width: 18.33%;">
+          </colgroup>
           <tr>
             <td colspan="2">Escrito por:<br><span class="val">Generalista RH</span></td>
             <td colspan="2">Aprobado por:<br><span class="val">Gerencia Financiera</span></td>
@@ -169,6 +197,14 @@
 
         <!-- Fechas y Salario -->
         <table class="doc-table middle-table">
+          <colgroup>
+            <col style="width: 15%;">
+            <col style="width: 18.33%;">
+            <col style="width: 15%;">
+            <col style="width: 18.33%;">
+            <col style="width: 15%;">
+            <col style="width: 18.33%;">
+          </colgroup>
           <tr>
             <td class="label-blue-sm">Rige desde =</td>
             <td class="val-center" id="doc-rige_desde"></td>
@@ -178,9 +214,9 @@
             <td class="val-right bg-grey"></td>
           </tr>
           <tr>
-            <td colspan="2">Total días Habiles</td>
+            <td class="label-black">Total días Habiles</td>
             <td class="val-center" id="doc-dias_habiles"></td>
-            <td class="empty-cell"></td>
+            <td colspan="2" class="empty-cell"></td>
             <td class="label-black">MENSUAL</td>
             <td class="val-right" id="doc-salario_mensual">0,00</td>
           </tr>
@@ -206,15 +242,27 @@
           <tr class="sign-area-row">
             <td class="sign-cell">
               <canvas id="canvas-empleado"></canvas>
-              <button class="clear-btn" data-canvas="empleado">Limpiar</button>
+              <div class="sign-controls">
+                <label for="upload-empleado" class="btn-sign">📷 Subir</label>
+                <input type="file" id="upload-empleado" class="upload-input" accept="image/*" />
+                <button class="btn-sign clear-btn" data-canvas="empleado">Borrar</button>
+              </div>
             </td>
             <td class="sign-cell">
               <canvas id="canvas-superior"></canvas>
-              <button class="clear-btn" data-canvas="superior">Limpiar</button>
+              <div class="sign-controls">
+                <label for="upload-superior" class="btn-sign">📷 Subir</label>
+                <input type="file" id="upload-superior" class="upload-input" accept="image/*" />
+                <button class="btn-sign clear-btn" data-canvas="superior">Borrar</button>
+              </div>
             </td>
             <td class="sign-cell">
               <canvas id="canvas-rrhh"></canvas>
-              <button class="clear-btn" data-canvas="rrhh">Limpiar</button>
+              <div class="sign-controls">
+                <label for="upload-rrhh" class="btn-sign">📷 Subir</label>
+                <input type="file" id="upload-rrhh" class="upload-input" accept="image/*" />
+                <button class="btn-sign clear-btn" data-canvas="rrhh">Borrar</button>
+              </div>
             </td>
           </tr>
           <tr>
@@ -232,6 +280,96 @@
       </div>
     </div>
   </main>
+
+  <!-- PREMIUM MODAL PARA NUEVOS VALORES -->
+  <div id="premium-modal" class="modal-overlay">
+    <div class="modal-content">
+      <h3 id="modal-title">Agregar Nuevo</h3>
+      <p class="modal-subtitle">Ingrese el nombre para registrarlo en el sistema.</p>
+      <div class="modal-input-group">
+        <input type="text" id="modal-input" placeholder="Escriba aquí..." autocomplete="off" />
+        <span id="modal-error" class="modal-error-msg">Formato inválido. Use letras o números.</span>
+      </div>
+      <div class="modal-actions">
+        <button id="modal-btn-cancel" class="btn btn-secondary">Cancelar</button>
+        <button id="modal-btn-save" class="btn btn-primary">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Supabase CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- ADMIN LOGIN MODAL -->
+  <div id="admin-login-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-content glass-panel" style="max-width: 400px; text-align: center;">
+      <h2 style="margin-bottom: 20px; color: var(--primary-dark);">Acceso Restringido</h2>
+      <p style="margin-bottom: 20px; color: var(--text-muted); font-size: 14px;">Solo personal autorizado</p>
+      
+      <div class="input-group">
+        <label>Correo Electrónico</label>
+        <input type="email" id="admin-email" placeholder="admin@sekunet.com">
+      </div>
+      <div class="input-group">
+        <label>Contraseña</label>
+        <input type="password" id="admin-password" placeholder="••••••••">
+      </div>
+      
+      <div style="display: flex; gap: 10px; margin-top: 20px;">
+        <button id="btn-close-login" class="btn btn-secondary" style="flex: 1;">Cancelar</button>
+        <button id="btn-admin-login" class="btn btn-primary" style="flex: 1;">Ingresar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADMIN DASHBOARD MODAL -->
+  <div id="admin-dashboard-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-content glass-panel" style="max-width: 900px; width: 95%; max-height: 90vh; overflow-y: auto;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+        <h2 style="color: var(--primary-dark); margin: 0;">Panel de Administración</h2>
+        <button id="btn-close-dashboard" class="btn btn-secondary" style="padding: 8px 16px;">Cerrar Panel</button>
+      </div>
+      
+      <div class="dashboard-grid" style="display: grid; grid-template-columns: 1fr 300px; gap: 30px;">
+        
+        <!-- Lista de Formularios -->
+        <div class="dashboard-section">
+          <h3 style="margin-bottom: 15px; border-bottom: 2px solid var(--primary-light); padding-bottom: 10px;">Formularios Registrados</h3>
+          <div style="overflow-x: auto; background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+            <table id="formularios-table" style="width: 100%; text-align: left; border-collapse: collapse; font-size: 14px;">
+              <thead>
+                <tr style="background: #f8fafc; border-bottom: 1px solid #e2e8f0;">
+                  <th style="padding: 12px; font-weight: 600;">Fecha</th>
+                  <th style="padding: 12px; font-weight: 600;">Cédula</th>
+                  <th style="padding: 12px; font-weight: 600;">Nombre</th>
+                  <th style="padding: 12px; font-weight: 600;">Acción</th>
+                </tr>
+              </thead>
+              <tbody id="formularios-tbody">
+                <tr><td colspan="4" style="padding: 20px; text-align: center; color: #94a3b8;">Cargando registros...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Gestión de Usuarios -->
+        <div class="dashboard-section">
+          <h3 style="margin-bottom: 15px; border-bottom: 2px solid var(--primary-light); padding-bottom: 10px;">Crear Usuario (Admin)</h3>
+          <div class="input-group">
+            <label>Nuevo Correo</label>
+            <input type="email" id="new-user-email" placeholder="usuario@sekunet.com">
+          </div>
+          <div class="input-group">
+            <label>Contraseña Temporal</label>
+            <input type="password" id="new-user-password" placeholder="Min. 6 caracteres">
+          </div>
+          <button id="btn-create-user" class="btn btn-success" style="width: 100%; margin-top: 10px;">Crear Usuario</button>
+          <p id="user-creation-msg" style="margin-top: 10px; font-size: 13px; text-align: center; color: var(--success); display: none;"></p>
+        </div>
+
+      </div>
+    </div>
+  </div>
 
   <script type="module" src="./main.js"></script>
 </body>
