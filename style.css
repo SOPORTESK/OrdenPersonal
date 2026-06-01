@@ -308,10 +308,10 @@
     width: 1122px;
     height: 790px;
     box-sizing: border-box;
-    padding: 15px 30px;
+    padding: 20px 35px;
     box-shadow: 0 8px 30px rgba(0,0,0,0.4);
-    font-family: Arial, Helvetica, sans-serif;
-    color: var(--doc-black);
+    font-family: 'Inter', Arial, Helvetica, sans-serif;
+    color: #1f2937;
     position: relative;
     transform-origin: top left;
     overflow: hidden;
@@ -319,7 +319,7 @@
   
   @media (max-width: 1150px) {
     #document-wrapper {
-      justify-content: flex-start; /* Evita que flex center corte los bordes */
+      justify-content: flex-start;
       padding: 0;
     }
     .document-sheet {
@@ -331,24 +331,23 @@
   
   .doc-header {
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    margin-bottom: 0px;
-    position: relative;
+    margin-bottom: 8px;
+    padding-bottom: 8px;
+    border-bottom: 3px solid #1e3a8a;
   }
   
   .logo-box {
-    height: 120px;
+    height: 100px;
     display: flex;
     align-items: center;
-    overflow: visible;
+    flex-shrink: 0;
   }
   
   .logo-box img {
     height: 100%;
     width: auto;
     object-fit: contain;
-    object-position: left center;
   }
   
   .title-box {
@@ -357,67 +356,98 @@
   }
   
   .title-box h2 {
-    font-size: 22px;
+    font-size: 24px;
     font-weight: 800;
     margin: 0;
-    letter-spacing: 0.5px;
+    letter-spacing: 1px;
+    color: #1e3a8a;
+    text-transform: uppercase;
   }
   
   .doc-table {
     width: 100%;
     border-collapse: collapse;
-    margin-bottom: -1px;
+    margin-bottom: 0;
     table-layout: fixed;
   }
   
   .doc-table td {
-    border: var(--doc-border);
-    padding: 4px 8px;
-    font-size: 13px;
-    vertical-align: top;
+    border: 1px solid #d1d5db;
+    padding: 5px 10px;
+    font-size: 11px;
+    vertical-align: middle;
+  }
+  
+  /* Row 1: Navy header row */
+  .top-table tr:first-child td {
+    background-color: #1e3a8a;
+    color: white;
+    font-weight: 600;
+    font-size: 11px;
+    border-color: #1e3a8a;
+    padding: 6px 10px;
+  }
+  
+  .top-table tr:first-child td .val {
+    color: white;
+    font-weight: 400;
   }
   
   .label-blue {
-    color: var(--doc-blue);
-    font-weight: bold;
-    font-size: 13px;
-    width: 15%;
+    background-color: #f0f4ff;
+    color: #1e3a8a;
+    font-weight: 700;
+    font-size: 11px;
+    white-space: nowrap;
   }
   
   .label-blue-sm {
-    color: var(--doc-blue);
-    font-weight: bold;
-    font-size: 11px;
-    width: 15%;
+    background-color: #f0f4ff;
+    color: #1e3a8a;
+    font-weight: 700;
+    font-size: 10px;
   }
   
   .label-black {
-    font-weight: bold;
-    font-size: 12px;
+    background-color: #f0f4ff;
+    font-weight: 700;
+    font-size: 10px;
+    color: #374151;
   }
   
   .val {
     display: inline-block;
-    margin-top: 5px;
+    margin-top: 2px;
   }
   
   .val-center {
     text-align: center;
+    font-size: 12px;
+  }
+  
+  .val-left {
+    text-align: left;
+    font-size: 12px;
   }
   
   .val-right {
     text-align: right;
+    font-size: 12px;
   }
   
   .bg-grey {
     background-color: #f3f4f6;
   }
   
+  .td-fecha {
+    white-space: nowrap;
+  }
+  
   .doc-options-container {
-    border: var(--doc-border);
+    border: 1px solid #d1d5db;
     border-top: none;
-    padding: 8px 16px;
-    margin-bottom: -1px;
+    padding: 8px 12px;
+    margin-bottom: 0;
     background-color: white;
     box-sizing: border-box;
   }
@@ -425,58 +455,42 @@
   .options-grid {
     display: flex;
     flex-wrap: wrap;
-    gap: 12px;
-    padding: 10px 15px;
+    gap: 6px 8px;
+    padding: 4px 8px;
   }
   
   .opt-item {
-    width: calc(25% - 12px);
+    width: calc(25% - 8px);
     display: flex;
     align-items: center;
-    font-size: 12px;
-    font-weight: bold;
+    font-size: 10px;
+    font-weight: 600;
     box-sizing: border-box;
-  }
-  
-  .logo-circle {
-    width: 100px;
-    height: 100px;
-    border-radius: 50%;
-    margin: 0 auto 20px auto;
-    overflow: hidden;
-    background-color: white;
-    border: 2px solid var(--primary-color);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-  }
-  .logo-circle img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
+    color: #374151;
   }
   
   .opt-box {
-    width: 20px;
-    height: 20px;
+    width: 16px;
+    height: 16px;
     flex-shrink: 0;
-    border: 1.5px solid var(--doc-blue);
-    margin-right: 10px;
+    border: 1.5px solid #6b7280;
+    border-radius: 3px;
+    margin-right: 6px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 16px;
+    font-size: 12px;
     font-weight: bold;
-    color: black;
+    color: #1e3a8a;
   }
   
   .obs-table td {
     border-top: none;
   }
   .obs-table .val-obs {
-    height: 60px;
+    height: 50px;
     vertical-align: top;
+    font-size: 12px;
   }
   
   .sign-table {
@@ -485,16 +499,19 @@
   
   .sign-label {
     text-align: left;
-    font-size: 10px;
-    font-weight: bold;
-    height: 20px;
+    font-size: 9px;
+    font-weight: 700;
+    height: 18px;
     border-bottom: none !important;
+    color: #1e3a8a;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
   }
   
   .sign-area-row td {
     border-top: none !important;
     border-bottom: none !important;
-    height: 80px;
+    height: 70px;
     position: relative;
     padding: 0;
     vertical-align: middle;
@@ -502,9 +519,13 @@
   
   .sign-name {
     text-align: left;
-    font-size: 12px;
+    font-size: 11px;
     border-top: none !important;
-    padding-bottom: 20px !important;
+    padding-top: 0 !important;
+    padding-bottom: 15px !important;
+    border-bottom-style: dotted !important;
+    border-bottom-width: 2px !important;
+    border-bottom-color: #9ca3af !important;
   }
   
   .sign-cell canvas {
@@ -514,7 +535,6 @@
     background-color: rgba(30, 58, 138, 0.02);
   }
   
-  /* Controles de firma reubicados a la parte superior derecha */
   .sign-controls {
     position: absolute;
     top: 8px;
@@ -558,9 +578,11 @@
   .doc-footer {
     display: flex;
     justify-content: space-between;
-    margin-top: 20px;
-    font-size: 11px;
-    font-weight: bold;
+    margin-top: 10px;
+    font-size: 9px;
+    font-weight: 600;
+    color: #9ca3af;
+    letter-spacing: 0.3px;
   }
 
   /* ==========================================================================
