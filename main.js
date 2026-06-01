@@ -101,6 +101,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       if (data) {
+        // Cargar opciones desde la nube al select local si no existen
         data.forEach(item => {
           const selectEl = document.getElementById(item.select_id);
           if (selectEl) {
@@ -116,6 +117,28 @@ document.addEventListener('DOMContentLoaded', () => {
               localStorage.setItem(storageKey, JSON.stringify(savedOptions));
             }
           }
+        });
+
+        // Sincronizar de subida: Si el usuario tiene opciones en LocalStorage local que no están en Supabase, subirlas automáticamente
+        selectIds.forEach(id => {
+          const storageKey = `custom_${id}`;
+          const localOptions = JSON.parse(localStorage.getItem(storageKey) || '[]');
+          
+          localOptions.forEach(localVal => {
+            const existsInCloud = data.some(item => item.select_id === id && item.valor === localVal);
+            if (!existsInCloud) {
+              supabase.from('opciones_personalizadas').insert([{
+                select_id: id,
+                valor: localVal
+              }]).then(({ error }) => {
+                if (error) {
+                  console.error("Error subiendo opción histórica de LocalStorage a la nube:", error);
+                } else {
+                  console.log(`Opción '${localVal}' sincronizada con éxito en la nube.`);
+                }
+              });
+            }
+          });
         });
       }
     } catch (err) {
