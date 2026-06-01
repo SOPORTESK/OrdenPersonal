@@ -453,14 +453,14 @@
   }
   
   .options-grid {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px 8px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px 16px;
     padding: 4px 8px;
   }
   
   .opt-item {
-    width: calc(25% - 8px);
+    width: 100%;
     display: flex;
     align-items: center;
     font-size: 10px;

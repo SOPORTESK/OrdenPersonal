@@ -44,6 +44,16 @@ document.addEventListener('DOMContentLoaded', () => {
         const savedOptions = JSON.parse(localStorage.getItem(currentStorageKey) || '[]');
         savedOptions.push(newVal);
         localStorage.setItem(currentStorageKey, JSON.stringify(savedOptions));
+
+        // Guardar también en la base de datos Supabase en segundo plano
+        supabase.from('opciones_personalizadas').insert([{
+          select_id: currentSelectTarget.id,
+          valor: newVal
+        }]).then(({ error }) => {
+          if (error) {
+            console.error("Error guardando opción en Supabase (asegúrate de crear la tabla):", error);
+          }
+        });
       }
       currentSelectTarget.value = newVal;
       premiumModal.classList.remove('active');
@@ -57,18 +67,17 @@ document.addEventListener('DOMContentLoaded', () => {
     if (e.key === 'Enter') btnModalSave.click();
   });
 
-  // Lógica de Selects Personalizables (Centro Funcional, etc)
+  // Lógica de Selects Personalizables (Centro Funcional, etc) con Sincronización en la Nube
   const selectIds = ['centro_funcional', 'codigo_puesto', 'nombre_puesto'];
   
+  // 1. Cargar opciones locales desde LocalStorage de inmediato (render rápido)
   selectIds.forEach(id => {
     const selectEl = document.getElementById(id);
     const storageKey = `custom_${id}`;
     
-    // Cargar opciones guardadas
     const savedOptions = JSON.parse(localStorage.getItem(storageKey) || '[]');
     savedOptions.forEach(val => {
       const opt = new Option(val, val);
-      // Insertar justo antes del último option ('-- Agregar nuevo --')
       selectEl.insertBefore(opt, selectEl.lastElementChild);
     });
     
@@ -78,6 +87,44 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   });
+
+  // 2. Sincronizar en segundo plano opciones agregadas desde otros equipos vía Supabase
+  async function syncCustomOptionsFromCloud() {
+    try {
+      const { data, error } = await supabase
+        .from('opciones_personalizadas')
+        .select('select_id, valor');
+
+      if (error) {
+        console.warn("No se pudo conectar a 'opciones_personalizadas' en Supabase (usando respaldo local):", error.message);
+        return;
+      }
+
+      if (data) {
+        data.forEach(item => {
+          const selectEl = document.getElementById(item.select_id);
+          if (selectEl) {
+            const exists = Array.from(selectEl.options).some(opt => opt.value === item.valor);
+            if (!exists) {
+              const opt = new Option(item.valor, item.valor);
+              selectEl.insertBefore(opt, selectEl.lastElementChild);
+              
+              // Mantener actualizado el caché de LocalStorage local
+              const storageKey = `custom_${item.select_id}`;
+              const savedOptions = JSON.parse(localStorage.getItem(storageKey) || '[]');
+              savedOptions.push(item.valor);
+              localStorage.setItem(storageKey, JSON.stringify(savedOptions));
+            }
+          }
+        });
+      }
+    } catch (err) {
+      console.error("Error sincronizando opciones personalizadas:", err);
+    }
+  }
+
+  // Ejecutar sincronización al cargar la página
+  syncCustomOptionsFromCloud();
 
   // Wizard Navigation
   const steps = document.querySelectorAll('.step');
@@ -196,7 +243,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     opcionesOriginales.forEach(opt => {
       if (!opt) {
-        grid.innerHTML += `<div></div>`; // Espacio vacío
+        grid.innerHTML += `<div class="opt-item" style="visibility: hidden;"></div>`; // Espacio vacío
         return;
       }
       const isSelected = selectedAction === opt ? 'X' : '&nbsp;';
