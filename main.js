@@ -555,10 +555,10 @@ document.addEventListener('DOMContentLoaded', () => {
         await supabase.from('formularios').insert([{
           cedula: document.getElementById('cedula').value,
           nombre: document.getElementById('nombre').value,
-          tipo_accion: Array.from(document.querySelectorAll('.options-grid input[type="checkbox"]')).filter(c => c.checked).map(c => c.parentElement.textContent.trim()).join(', '),
+          tipo_accion: document.getElementById('tipo_accion').value,
           fecha_rige: document.getElementById('rige_desde').value,
           fecha_hasta: document.getElementById('hasta').value,
-          total_dias: document.getElementById('total_habiles').value
+          total_dias: document.getElementById('dias_habiles').value
         }]);
       } catch (dbError) {
         console.error("Error guardando en Supabase:", dbError);
