@@ -1,6 +1,3 @@
-import SignaturePad from 'signature_pad';
-import html2pdf from 'html2pdf.js';
-
 // Inicializar Supabase (usando el CDN global)
 const supabaseUrl = 'https://rjubbjhilulctbqsjxuv.supabase.co';
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJqdWJiamhpbHVsY3RicXNqeHV2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAzMjQ3ODQsImV4cCI6MjA5NTkwMDc4NH0.h7QSxgylv4Hzwg8uho5qsWtzJ8IrZTNjUSixBavL9hQ';
