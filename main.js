@@ -290,8 +290,8 @@ document.addEventListener('DOMContentLoaded', () => {
     reader.onload = (event) => {
       const img = new Image();
       img.onload = () => {
-        // PASO 1: Extraer tinta en alta resolución para no perder detalles
-        const MAX_WIDTH = 1500;
+        // PASO 1: Extraer tinta en alta resolución
+        const MAX_WIDTH = 2000;
         let w = img.width;
         let h = img.height;
         if (w > MAX_WIDTH) {
@@ -323,37 +323,63 @@ document.addEventListener('DOMContentLoaded', () => {
         
         const avgLum = count > 0 ? totalLum / count : 200;
         
-        // Ajuste de Niveles Inteligente
-        // White Point: Todo lo que sea más claro que el promedio (papel) se elimina.
-        const whitePoint = avgLum * 0.95; 
+        // White Point: papel -> transparente
+        const whitePoint = avgLum * 0.92; 
         
-        // Black Point: El núcleo del trazo de tinta. Todo lo que sea igual o más oscuro es 100% sólido.
-        // Lo calculamos un poco por encima del píxel más oscuro para engrosar el trazo.
-        const blackPoint = minLum + (whitePoint - minLum) * 0.3;
+        // Black Point: más agresivo para capturar más tinta y trazos finos
+        const blackPoint = minLum + (whitePoint - minLum) * 0.40;
 
-        // Extraer la tinta con suavizado (anti-aliasing) perfecto
+        // Extraer tinta: crear mapa de opacidad
+        const alphaMap = new Uint8Array(w * h);
         for (let i = 0; i < data.length; i += 4) {
-          if (data[i + 3] === 0) continue;
+          const px = i / 4;
+          if (data[i + 3] === 0) { alphaMap[px] = 0; continue; }
 
           const lum = 0.299 * data[i] + 0.587 * data[i+1] + 0.114 * data[i+2];
 
           if (lum >= whitePoint) {
-            data[i + 3] = 0; // Fondo/Papel -> Transparente
+            alphaMap[px] = 0;
           } else if (lum <= blackPoint) {
-            // Núcleo de la tinta -> Azul oscuro intenso y 100% sólido
-            data[i] = 10; data[i + 1] = 20; data[i + 2] = 90;
-            data[i + 3] = 255; 
+            alphaMap[px] = 255;
           } else {
-            // Bordes del trazo -> Azul oscuro con opacidad gradual (Anti-aliasing)
-            data[i] = 10; data[i + 1] = 20; data[i + 2] = 90;
-            const alpha = 255 - ((lum - blackPoint) / (whitePoint - blackPoint)) * 255;
-            data[i + 3] = Math.floor(alpha);
+            alphaMap[px] = Math.floor(255 - ((lum - blackPoint) / (whitePoint - blackPoint)) * 255);
+          }
+        }
+
+        // PASO 2: Dilatación morfológica — engrosa cada trazo 1px en todas direcciones
+        const dilated = new Uint8Array(w * h);
+        for (let y = 0; y < h; y++) {
+          for (let x = 0; x < w; x++) {
+            let maxAlpha = alphaMap[y * w + x];
+            // Revisar los 8 vecinos
+            for (let dy = -1; dy <= 1; dy++) {
+              for (let dx = -1; dx <= 1; dx++) {
+                const ny = y + dy, nx = x + dx;
+                if (ny >= 0 && ny < h && nx >= 0 && nx < w) {
+                  const neighborAlpha = alphaMap[ny * w + nx];
+                  if (neighborAlpha > maxAlpha) maxAlpha = neighborAlpha;
+                }
+              }
+            }
+            dilated[y * w + x] = maxAlpha;
+          }
+        }
+
+        // PASO 3: Aplicar resultado — tinta azul oscura sólida con bordes suaves
+        for (let i = 0; i < data.length; i += 4) {
+          const px = i / 4;
+          const alpha = dilated[px];
+          if (alpha === 0) {
+            data[i + 3] = 0;
+          } else {
+            data[i] = 10; data[i + 1] = 20; data[i + 2] = 80;
+            data[i + 3] = Math.min(255, Math.floor(alpha * 1.15));
           }
         }
         
         hCtx.putImageData(imgData, 0, 0);
 
-        // PASO 2: Escalar la firma nítida al tamaño del SignaturePad
+        // PASO 4: Escalar la firma al tamaño del SignaturePad
         const padCanvas = pad.canvas;
         const targetWidth = padCanvas.width;
         const targetHeight = padCanvas.height;
@@ -364,16 +390,15 @@ document.addEventListener('DOMContentLoaded', () => {
         const fCtx = finalCanvas.getContext('2d');
         fCtx.clearRect(0, 0, targetWidth, targetHeight);
 
-        const scale = Math.min(targetWidth / w, targetHeight / h) * 0.95;
+        const scale = Math.min(targetWidth / w, targetHeight / h) * 0.90;
         const finalW = w * scale;
         const finalH = h * scale;
-        const x = (targetWidth - finalW) / 2;
-        const y = (targetHeight - finalH) / 2;
+        const xOff = (targetWidth - finalW) / 2;
+        const yOff = (targetHeight - finalH) / 2;
 
-        // Al escalar con alta calidad, los bordes perfectos se mantienen nítidos
         fCtx.imageSmoothingEnabled = true;
         fCtx.imageSmoothingQuality = 'high';
-        fCtx.drawImage(highResCanvas, x, y, finalW, finalH);
+        fCtx.drawImage(highResCanvas, xOff, yOff, finalW, finalH);
 
         pad.clear();
         const ratio = Math.max(window.devicePixelRatio || 1, 1);
