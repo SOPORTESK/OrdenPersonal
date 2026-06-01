@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Acción de Personal</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  
+  <!-- WIZARD UI -->
+  <main id="wizard-container" class="active">
+    <header class="wizard-header">
+      <img src="./Formulario.png" alt="Logo" class="logo-preview" style="max-height: 40px; object-fit: contain; object-position: left; opacity: 0; display: none;" />
+      <h1>Acción de Personal</h1>
+      <div class="progress-bar">
+        <div class="progress-fill" id="progress-fill"></div>
+      </div>
+    </header>
+
+    <div class="steps-container">
+      
+      <!-- Paso 1: Datos Empleado -->
+      <section class="step active" id="step-1">
+        <h2>Datos del Colaborador</h2>
+        <div class="form-group">
+          <label for="empresa">Compañía</label>
+          <input type="text" id="empresa" value="SEKUNET" readonly />
+        </div>
+        <div class="form-group">
+          <label for="cedula">Cédula</label>
+          <input type="text" id="cedula" placeholder="Ej. 2-0539-0118" />
+        </div>
+        <div class="form-group">
+          <label for="nombre">Nombre</label>
+          <input type="text" id="nombre" placeholder="Nombre completo" />
+        </div>
+        <div class="form-group">
+          <label for="centro_funcional">Centro Funcional</label>
+          <input type="text" id="centro_funcional" placeholder="Centro funcional" />
+        </div>
+        <div class="form-group">
+          <label for="codigo_puesto">Código Puesto</label>
+          <input type="text" id="codigo_puesto" placeholder="Código de puesto" />
+        </div>
+        <div class="form-group">
+          <label for="nombre_puesto">Nombre del Puesto</label>
+          <input type="text" id="nombre_puesto" placeholder="Ej. Soporte Técnico" />
+        </div>
+      </section>
+
+      <!-- Paso 2: Tipo de Acción -->
+      <section class="step" id="step-2">
+        <h2>Tipo de Acción</h2>
+        <div class="form-group">
+          <label for="tipo_accion">Seleccione la acción</label>
+          <select id="tipo_accion">
+            <option value="">Seleccionar...</option>
+            <option value="ASCENSO">Ascenso</option>
+            <option value="AUMENTO DE SALARIO">Aumento de salario</option>
+            <option value="AUSENCIA">Ausencia</option>
+            <option value="CAMBIO DE HORARIO">Cambio de horario</option>
+            <option value="DESPIDO">Despido</option>
+            <option value="INCAPACIDAD C.C.S.S.">Incapacidad C.C.S.S.</option>
+            <option value="INCAPACIDAD ATENC.FAMILIAR">Incapacidad atenc. familiar</option>
+            <option value="INCAPACIDAD RIESGOS DEL INS">Incapacidad riesgos del INS</option>
+            <option value="INCAPACIDAD ACCIDENTE DE TRANSITO">Incapacidad accidente de transito</option>
+            <option value="LICENCIA POR MATERNIDAD">Licencia por maternidad</option>
+            <option value="NOMBRAMIENTO PERMANENTE">Nombramiento permanente</option>
+            <option value="NOMBRAMIENTO TEMPORAL">Nombramiento temporal</option>
+            <option value="PERMISO CON GOCE DE SALARIO">Permiso con goce de salario</option>
+            <option value="PERMISO SIN GOCE DE SALARIO">Permiso sin goce de salario</option>
+            <option value="RENUNCIA">Renuncia</option>
+            <option value="SUSPENSIÓN">Suspensión</option>
+            <option value="TRASLADO">Traslado</option>
+            <option value="VACACIONES ADICIONALES">Vacaciones adicionales</option>
+            <option value="VACACIONES ORDINARIAS">Vacaciones ordinarias</option>
+          </select>
+        </div>
+      </section>
+
+      <!-- Paso 3: Fechas y Detalles -->
+      <section class="step" id="step-3">
+        <h2>Fechas y Detalles</h2>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="rige_desde">Rige desde</label>
+            <input type="date" id="rige_desde" />
+          </div>
+          <div class="form-group">
+            <label for="hasta">Hasta</label>
+            <input type="date" id="hasta" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="dias_habiles">Total días Hábiles</label>
+          <input type="number" id="dias_habiles" readonly />
+        </div>
+        <div class="form-group">
+          <label for="salario_mensual">Salario Mensual</label>
+          <input type="text" id="salario_mensual" placeholder="0,00" />
+        </div>
+        <div class="form-group">
+          <label for="observaciones">Observaciones</label>
+          <textarea id="observaciones" rows="4"></textarea>
+        </div>
+      </section>
+      
+    </div>
+
+    <div class="wizard-footer">
+      <button id="btn-prev" class="btn btn-secondary" disabled>Anterior</button>
+      <button id="btn-next" class="btn btn-primary">Siguiente</button>
+      <button id="btn-preview" class="btn btn-primary" style="display: none;">Ver Documento</button>
+    </div>
+  </main>
+
+  <!-- FINAL DOCUMENT PREVIEW (Mimics Image) -->
+  <main id="preview-container">
+    <div class="preview-actions">
+      <button id="btn-back-wizard" class="btn btn-secondary">← Volver</button>
+      <button id="btn-share" class="btn btn-success">Generar y Compartir</button>
+    </div>
+    
+    <div id="document-wrapper">
+      <div id="document-to-pdf" class="document-sheet">
+        <!-- Encabezado -->
+        <div class="doc-header">
+          <div class="logo-box">
+            <!-- Emulando el logo recortando la imagen original con CSS -->
+            <div class="logo-sekunet"></div>
+          </div>
+          <div class="title-box">
+            <h2>ACCIÓN DE PERSONAL</h2>
+          </div>
+        </div>
+        
+        <!-- Info Cabecera -->
+        <table class="doc-table top-table">
+          <tr>
+            <td colspan="2">Escrito por:<br><span class="val">Generalista RH</span></td>
+            <td colspan="2">Aprobado por:<br><span class="val">Gerencia Financiera</span></td>
+            <td colspan="2" class="td-fecha">Fecha: <span class="val" id="doc-fecha_actual"></span></td>
+          </tr>
+          <tr>
+            <td class="label-blue">Compañía :</td>
+            <td class="val-center">SEKUNET</td>
+            <td class="label-blue">Cédula:</td>
+            <td class="val-center" id="doc-cedula"></td>
+            <td class="label-blue">Nombre :</td>
+            <td class="val-left" id="doc-nombre"></td>
+          </tr>
+          <tr>
+            <td class="label-blue">CENTRO<br>FUNCIONAL :</td>
+            <td class="val-center" id="doc-centro_funcional"></td>
+            <td class="label-blue">Código<br>puesto :</td>
+            <td class="val-center" id="doc-codigo_puesto"></td>
+            <td class="label-blue">Nombre del puesto :</td>
+            <td class="val-center" id="doc-nombre_puesto"></td>
+          </tr>
+        </table>
+
+        <!-- Opciones -->
+        <div class="doc-options-container">
+           <!-- Generado dinámicamente en JS para parecerse a la imagen -->
+           <div id="doc-options-grid" class="options-grid"></div>
+        </div>
+
+        <!-- Fechas y Salario -->
+        <table class="doc-table middle-table">
+          <tr>
+            <td class="label-blue-sm">Rige desde =</td>
+            <td class="val-center" id="doc-rige_desde"></td>
+            <td class="label-blue-sm">Hasta =</td>
+            <td class="val-center" id="doc-hasta"></td>
+            <td class="label-blue-sm">SALARIO<br>QUINCENAL</td>
+            <td class="val-right bg-grey"></td>
+          </tr>
+          <tr>
+            <td colspan="2">Total días Habiles</td>
+            <td class="val-center" id="doc-dias_habiles"></td>
+            <td class="empty-cell"></td>
+            <td class="label-black">MENSUAL</td>
+            <td class="val-right" id="doc-salario_mensual">0,00</td>
+          </tr>
+        </table>
+
+        <!-- Observaciones -->
+        <table class="doc-table obs-table">
+          <tr>
+            <td class="label-blue-sm">OBSERVACIONES =</td>
+          </tr>
+          <tr>
+            <td class="val-obs" id="doc-observaciones"></td>
+          </tr>
+        </table>
+
+        <!-- Firmas -->
+        <table class="doc-table sign-table">
+          <tr>
+            <td class="sign-label">FIRMA DEL EMPLEADO</td>
+            <td class="sign-label">FIRMA DEL SUPERIOR INMEDIATO</td>
+            <td class="sign-label">RECIBIDO DESARROLLO HUMANO</td>
+          </tr>
+          <tr class="sign-area-row">
+            <td class="sign-cell">
+              <canvas id="canvas-empleado"></canvas>
+              <button class="clear-btn" data-canvas="empleado">Limpiar</button>
+            </td>
+            <td class="sign-cell">
+              <canvas id="canvas-superior"></canvas>
+              <button class="clear-btn" data-canvas="superior">Limpiar</button>
+            </td>
+            <td class="sign-cell">
+              <canvas id="canvas-rrhh"></canvas>
+              <button class="clear-btn" data-canvas="rrhh">Limpiar</button>
+            </td>
+          </tr>
+          <tr>
+            <td class="sign-name" id="doc-firma-nombre-empleado">Nombre</td>
+            <td class="sign-name">Nombre</td>
+            <td class="sign-name">Nombre</td>
+          </tr>
+        </table>
+
+        <div class="doc-footer">
+          <span>ORIGINAL: EXPEDIENTE DEL EMPLEADO.</span>
+          <span>COPIA 1 : EMPLEADO</span>
+          <span>COPIA 2 = SUPERIOR INMEDIATO</span>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script type="module" src="./main.js"></script>
+</body>
+</html>
