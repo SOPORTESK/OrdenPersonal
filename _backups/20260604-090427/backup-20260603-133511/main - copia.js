@@ -1,45 +1,4 @@
-// ==========================================
-// THEME MANAGEMENT (Light / Dark)
-// ==========================================
-const currentTheme = localStorage.getItem('theme') || 'light';
-if (currentTheme === 'dark') {
-  document.documentElement.setAttribute('data-theme', 'dark');
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-  const themeToggle = document.getElementById('theme-toggle');
-  const iconLight = document.getElementById('theme-icon-light');
-  const iconDark = document.getElementById('theme-icon-dark');
-  const themeMeta = document.querySelector('meta[name="theme-color"]');
-
-  function updateThemeUI(theme) {
-    if (theme === 'dark') {
-      document.documentElement.setAttribute('data-theme', 'dark');
-      if(iconLight) iconLight.style.display = 'none';
-      if(iconDark) iconDark.style.display = 'block';
-      if(themeMeta) themeMeta.setAttribute('content', '#0a0a0f');
-    } else {
-      document.documentElement.removeAttribute('data-theme');
-      if(iconLight) iconLight.style.display = 'block';
-      if(iconDark) iconDark.style.display = 'none';
-      if(themeMeta) themeMeta.setAttribute('content', '#f4f4f5');
-    }
-  }
-
-  // Initialize UI
-  updateThemeUI(currentTheme);
-
-  if (themeToggle) {
-    themeToggle.addEventListener('click', () => {
-      const isDark = document.documentElement.hasAttribute('data-theme');
-      const newTheme = isDark ? 'light' : 'dark';
-      localStorage.setItem('theme', newTheme);
-      updateThemeUI(newTheme);
-    });
-  }
-});
-
-// Inicializar Supabase (usando el CDN global) - con protección anti-crash
+﻿// Inicializar Supabase (usando el CDN global) - con protección anti-crash
 const supabaseUrl = 'https://rjubbjhilulctbqsjxuv.supabase.co';
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJqdWJiamhpbHVsY3RicXNqeHV2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAzMjQ3ODQsImV4cCI6MjA5NTkwMDc4NH0.h7QSxgylv4Hzwg8uho5qsWtzJ8IrZTNjUSixBavL9hQ';
 let supabaseClient = null;
@@ -187,7 +146,7 @@ function initApp() {
     });
   }
 
-  const selectIds = ['empresa','centro_funcional', 'codigo_puesto', 'nombre_puesto'];
+  const selectIds = ['centro_funcional', 'codigo_puesto', 'nombre_puesto'];
   selectIds.forEach(id => {
     const selectEl = document.getElementById(id);
     if (!selectEl) return;
@@ -336,11 +295,11 @@ function initApp() {
     "INCAPACIDAD ATENC.FAMILIAR", "PERMISO SIN GOCE DE SALARIO", ""
   ];
 
-  function populateOptionsGrid(overrideAction) {
+  function populateOptionsGrid() {
     const grid = document.getElementById('doc-options-grid');
     if (!grid) return;
     grid.innerHTML = '';
-    const selectedAction = overrideAction !== undefined ? overrideAction : document.getElementById('tipo_accion').value;
+    const selectedAction = document.getElementById('tipo_accion').value;
     opcionesOriginales.forEach(opt => {
       if (!opt) {
         grid.innerHTML += `<div class="opt-item" style="visibility: hidden;"></div>`;
@@ -358,99 +317,6 @@ function initApp() {
     return `${date.getDate()}-${monthNames[date.getMonth()]}-${date.getFullYear().toString().slice(-2)}`;
   }
 
-  function isMobileDevice() {
-    try {
-      return (window.matchMedia && (matchMedia('(pointer: coarse)').matches || matchMedia('(max-width: 768px)').matches));
-    } catch { return false; }
-  }
-
-  function populatePreviewFields() {
-    const get = (id) => document.getElementById(id);
-    get('doc-empresa').innerText = get('empresa').value;
-    get('doc-cedula').innerText = get('cedula').value;
-    get('doc-nombre').innerText = get('nombre').value;
-    get('doc-centro_funcional').innerText = get('centro_funcional').value;
-    get('doc-codigo_puesto').innerText = get('codigo_puesto').value;
-    get('doc-nombre_puesto').innerText = get('nombre_puesto').value;
-    get('doc-rige_desde').innerText = formatDateToSpanish(get('rige_desde').value);
-    get('doc-hasta').innerText = formatDateToSpanish(get('hasta').value);
-    get('doc-dias_habiles').innerText = get('dias_habiles').value;
-    get('doc-salario_mensual').innerText = get('salario_mensual').value;
-    get('doc-observaciones').innerText = get('observaciones').value;
-    get('doc-firma-nombre-empleado').innerText = get('nombre').value;
-    get('doc-fecha_actual').innerText = formatDateToSpanish(new Date().toISOString().split('T')[0]);
-    populateOptionsGrid();
-  }
-
-  async function mobileSharePdfFlow() {
-    // Poblar campos antes de exportar
-    populatePreviewFields();
-    // Ocultar controles de firma durante render
-    document.querySelectorAll('.sign-controls').forEach(el => el.style.display = 'none');
-    const element = document.getElementById('document-to-pdf');
-    const opt = {
-      margin: 0,
-      filename: `Accion_Personal_${document.getElementById('cedula').value}.pdf`,
-      image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true, windowWidth: 1122, width: 1122 },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
-    };
-    const wrapper = document.getElementById('document-wrapper');
-    const docSheet = document.getElementById('document-to-pdf');
-    const originalOverflow = wrapper.style.overflowX, originalTransform = docSheet.style.transform;
-    if (wrapper) wrapper.style.overflowX = 'visible';
-    if (docSheet) docSheet.style.transform = 'none';
-    try {
-      const pdfBlob = await html2pdf().set(opt).from(element).output('blob');
-      // Guardar registro (igual que en compartir normal)
-      if (supabaseClient) {
-        const datosFormulario = {
-          empresa: document.getElementById('empresa').value,
-          cedula: document.getElementById('cedula').value,
-          nombre: document.getElementById('nombre').value,
-          centro_funcional: document.getElementById('centro_funcional').value,
-          codigo_puesto: document.getElementById('codigo_puesto').value,
-          nombre_puesto: document.getElementById('nombre_puesto').value,
-          tipo_accion: document.getElementById('tipo_accion').value,
-          fecha_rige: document.getElementById('rige_desde').value,
-          fecha_hasta: document.getElementById('hasta').value,
-          total_dias: document.getElementById('dias_habiles').value,
-          salario_mensual: document.getElementById('salario_mensual').value,
-          observaciones: document.getElementById('observaciones').value,
-          fecha_actual: document.getElementById('doc-fecha_actual').innerText
-        };
-        const firmaEmpleado = document.getElementById('canvas-empleado').toDataURL();
-        try {
-          await supabaseClient.from('formularios').insert([{
-            cedula: datosFormulario.cedula, nombre: datosFormulario.nombre, tipo_accion: datosFormulario.tipo_accion,
-            fecha_rige: datosFormulario.fecha_rige, fecha_hasta: datosFormulario.fecha_hasta,
-            total_dias: datosFormulario.total_dias, datos_completos: datosFormulario,
-            firma_empleado: firmaEmpleado, estado: 'Pendiente de firma'
-          }]);
-        } catch {}
-      }
-      // Opción C: en móvil, abrir el PDF en una nueva pestaña para visualizarlo primero
-      if (isMobileDevice()) {
-        const url = URL.createObjectURL(pdfBlob);
-        const w = window.open(url, '_blank');
-        if (!w || w.closed) {
-          // Fallback si el navegador bloquea popups: forzar descarga
-          const a = document.createElement('a'); a.href = url; a.download = opt.filename; document.body.appendChild(a); a.click(); document.body.removeChild(a);
-        }
-      } else {
-        // Desktop no llega aquí en flujo móvil, pero dejamos fallback estándar
-        const url = URL.createObjectURL(pdfBlob);
-        const a = document.createElement('a'); a.href = url; a.download = opt.filename; document.body.appendChild(a); a.click(); document.body.removeChild(a);
-      }
-    } catch (err) {
-      console.error(err); alert('Error al generar/compartir el PDF.');
-    } finally {
-      if (wrapper) wrapper.style.overflowX = originalOverflow; 
-      if (docSheet) docSheet.style.transform = originalTransform;
-      document.querySelectorAll('.sign-controls').forEach(el => el.style.display = 'flex');
-    }
-  }
-
   // Canvases y pads deben declararse ANTES de usarlos en Vista Previa
   const canvasEmpleado = document.getElementById('canvas-empleado');
   const canvasSuperior = document.getElementById('canvas-superior');
@@ -459,67 +325,22 @@ function initApp() {
   const padSuperior = canvasSuperior ? new SignaturePad(canvasSuperior) : null;
   const padRRHH = canvasRRHH ? new SignaturePad(canvasRRHH) : null;
 
-  // Modal de Firma Móvil (solo se usará en dispositivos móviles)
-  const mobileSignModal = document.getElementById('mobile-sign-modal');
-  const mobileCanvas = document.getElementById('mobile-sign-canvas');
-  const mobilePad = mobileCanvas ? new SignaturePad(mobileCanvas) : null;
-  const btnMobileCancel = document.getElementById('btn-mobile-cancel');
-  const btnMobileDone = document.getElementById('btn-mobile-done');
-  const btnMobileClear = document.getElementById('btn-mobile-clear');
-  const btnMobilePhoto = document.getElementById('btn-mobile-photo');
-  const btnMobileUpload = document.getElementById('btn-mobile-upload');
-  const inputMobileCam = document.getElementById('mobile-file-camera');
-  const inputMobileUpload = document.getElementById('mobile-file-upload');
-
-  function resizeCanvasToClient(canvas) {
-    if (!canvas) return;
-    const ratio = Math.max(window.devicePixelRatio || 1, 1);
-    const rect = canvas.getBoundingClientRect();
-    canvas.width = Math.max(1, Math.floor(rect.width * ratio));
-    canvas.height = Math.max(1, Math.floor(rect.height * ratio));
-    const ctx = canvas.getContext('2d');
-    ctx.setTransform(1,0,0,1,0,0);
-    ctx.scale(ratio, ratio);
-  }
-
-  function openMobileSign() {
-    if (!mobileSignModal) return;
-    mobileSignModal.classList.add('active');
-    setTimeout(() => { resizeCanvasToClient(mobileCanvas); mobilePad?.clear(); }, 50);
-  }
-  function closeMobileSign() { mobileSignModal?.classList.remove('active'); }
-
-  if (btnMobileCancel) btnMobileCancel.addEventListener('click', closeMobileSign);
-  if (btnMobileClear) btnMobileClear.addEventListener('click', () => mobilePad?.clear());
-  if (btnMobilePhoto) btnMobilePhoto.addEventListener('click', () => inputMobileCam?.click());
-  if (btnMobileUpload) btnMobileUpload.addEventListener('click', () => inputMobileUpload?.click());
-  if (inputMobileCam) inputMobileCam.addEventListener('change', (e) => { const f = e.target.files[0]; if (f) processSignatureImage(f, mobilePad); });
-  if (inputMobileUpload) inputMobileUpload.addEventListener('change', (e) => { const f = e.target.files[0]; if (f) processSignatureImage(f, mobilePad); });
-  if (btnMobileDone) btnMobileDone.addEventListener('click', () => {
-    if (!mobilePad || mobilePad.isEmpty()) { alert('Por favor, firme o suba una imagen.'); return; }
-    try {
-      const dataUrl = mobilePad.toDataURL('image/png');
-      if (padEmpleado) {
-        const ratio = Math.max(window.devicePixelRatio || 1, 1);
-        padEmpleado.clear();
-        padEmpleado.fromDataURL(dataUrl, { ratio });
-      }
-    } catch(e) { console.warn('No se pudo aplicar la firma móvil:', e); }
-    closeMobileSign();
-    // En móvil no mostramos vista previa: directamente generar y compartir/descargar
-    setTimeout(() => mobileSharePdfFlow(), 30);
-  });
-
   if (btnPreview) {
     btnPreview.addEventListener('click', () => {
-      // Gate: en móvil, si no hay firma del empleado todavía, abrir captura full-screen primero
-      if (isMobileDevice()) {
-        if (padEmpleado && padEmpleado.isEmpty()) { openMobileSign(); return; }
-        // Ya hay firma: en móvil saltar vista previa y compartir/guardar
-        mobileSharePdfFlow();
-        return;
-      }
-      populatePreviewFields();
+      document.getElementById('doc-cedula').innerText = document.getElementById('cedula').value;
+      document.getElementById('doc-nombre').innerText = document.getElementById('nombre').value;
+      document.getElementById('doc-centro_funcional').innerText = document.getElementById('centro_funcional').value;
+      document.getElementById('doc-codigo_puesto').innerText = document.getElementById('codigo_puesto').value;
+      document.getElementById('doc-nombre_puesto').innerText = document.getElementById('nombre_puesto').value;
+      document.getElementById('doc-rige_desde').innerText = formatDateToSpanish(document.getElementById('rige_desde').value);
+      document.getElementById('doc-hasta').innerText = formatDateToSpanish(document.getElementById('hasta').value);
+      document.getElementById('doc-dias_habiles').innerText = document.getElementById('dias_habiles').value;
+      document.getElementById('doc-salario_mensual').innerText = document.getElementById('salario_mensual').value;
+      document.getElementById('doc-observaciones').innerText = document.getElementById('observaciones').value;
+      document.getElementById('doc-firma-nombre-empleado').innerText = document.getElementById('nombre').value;
+      document.getElementById('doc-fecha_actual').innerText = formatDateToSpanish(new Date().toISOString().split('T')[0]);
+
+      populateOptionsGrid();
       if (wizardContainer) wizardContainer.classList.remove('active');
       if (previewContainer) previewContainer.classList.add('active');
       resizeCanvas(canvasEmpleado);
@@ -535,35 +356,6 @@ function initApp() {
     });
   }
 
-  // Descargar PDF directo en Admin
-  const btnAdminDownload = document.getElementById('btn-admin-download');
-  if (btnAdminDownload) {
-    btnAdminDownload.addEventListener('click', async () => {
-      document.querySelectorAll('.sign-controls').forEach(el => el.style.display = 'none');
-      const element = document.getElementById('document-to-pdf');
-      const opt = {
-        margin: 0, filename: `Accion_Personal_${document.getElementById('cedula').value}.pdf`,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true, windowWidth: 1122, width: 1122 },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
-      };
-      const wrapper = document.getElementById('document-wrapper');
-      const docSheet = document.getElementById('document-to-pdf');
-      const originalOverflow = wrapper.style.overflowX, originalTransform = docSheet.style.transform;
-      if (wrapper) wrapper.style.overflowX = 'visible'; 
-      if (docSheet) docSheet.style.transform = 'none';
-      try {
-        await html2pdf().set(opt).from(element).save();
-      } catch (err) {
-        console.error(err); alert('Error al descargar el PDF.');
-      } finally {
-        if (wrapper) wrapper.style.overflowX = originalOverflow; 
-        if (docSheet) docSheet.style.transform = originalTransform;
-        document.querySelectorAll('.sign-controls').forEach(el => el.style.display = 'flex');
-      }
-    });
-  }
-
   // (declarados arriba)
 
   function resizeCanvas(canvas) {
@@ -573,18 +365,6 @@ function initApp() {
     canvas.width = parent.offsetWidth * ratio;
     canvas.height = parent.offsetHeight * ratio;
     canvas.getContext("2d").scale(ratio, ratio);
-  }
-
-  function drawImageFitted(canvas, img) {
-    if (!canvas || !img) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    const w = canvas.width, h = canvas.height;
-    const scale = Math.min(w / img.width, h / img.height);
-    const dw = img.width * scale, dh = img.height * scale;
-    const dx = (w - dw) / 2, dy = (h - dh) / 2;
-    ctx.drawImage(img, dx, dy, dw, dh);
   }
 
   document.querySelectorAll('.clear-btn').forEach(btn => {
@@ -741,7 +521,6 @@ function initApp() {
         const pdfBlob = await html2pdf().set(opt).from(element).output('blob');
         if (supabaseClient) {
           const datosFormulario = {
-            empresa: document.getElementById('empresa').value,
             cedula: document.getElementById('cedula').value,
             nombre: document.getElementById('nombre').value,
             centro_funcional: document.getElementById('centro_funcional').value,
@@ -833,12 +612,9 @@ function initApp() {
   function finishLogin() {
     const isSuper = window.currentUserData.rol === 'superadmin';
     const tabUsers = document.getElementById('tab-btn-usuarios');
-    const tabBar = document.getElementById('admin-tab-bar');
     const roleGroup = document.getElementById('role-selection-group');
-    const editRoleGroup = document.getElementById('edit-role-group');
 
-    if (tabUsers) tabUsers.style.display = isSuper ? 'flex' : 'none';
-    if (tabBar) tabBar.classList.add('visible');
+    if (tabUsers) tabUsers.style.display = 'inline-block';
     if (roleGroup) roleGroup.style.display = isSuper ? 'block' : 'none';
 
     if (loginModal) loginModal.classList.remove('active');
@@ -847,57 +623,12 @@ function initApp() {
     const passInput = document.getElementById('admin-password');
     if (passInput) passInput.value = '';
     
-    // Activate formularios tab by default
-    switchAdminTab('view-formularios');
+    const tabForms = document.getElementById('tab-btn-formularios');
+    if (tabForms) tabForms.click();
   }
-
-  // --- Bottom Tab Bar Navigation ---
-  document.querySelectorAll('#admin-tab-bar .tab-button').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const viewId = btn.dataset.view;
-      switchAdminTab(viewId);
-    });
-  });
-
-  function switchAdminTab(viewId) {
-    // Update tab buttons
-    document.querySelectorAll('#admin-tab-bar .tab-button').forEach(t => t.classList.remove('active'));
-    const activeTab = document.querySelector(`[data-view="${viewId}"]`);
-    if (activeTab) activeTab.classList.add('active');
-
-    // Update views
-    document.querySelectorAll('.admin-view').forEach(v => v.classList.remove('active'));
-    const activeView = document.getElementById(viewId);
-    if (activeView) activeView.classList.add('active');
-
-    // Show/hide FAB
-    const fab = document.getElementById('fab-add-user');
-    if (fab) {
-      fab.classList.toggle('visible', viewId === 'view-usuarios' && window.currentUserData.rol === 'superadmin');
-    }
-
-    // Load data
-    if (viewId === 'view-formularios') loadDashboardData();
-    if (viewId === 'view-usuarios') loadUsuariosData();
-  }
-
-  // --- Filter Chips ---
-  let currentStatusFilter = '';
-  document.querySelectorAll('#filter-chips .filter-chip').forEach(chip => {
-    chip.addEventListener('click', () => {
-      document.querySelectorAll('#filter-chips .filter-chip').forEach(c => c.classList.remove('active'));
-      chip.classList.add('active');
-      currentStatusFilter = chip.dataset.status;
-      renderFormularios();
-    });
-  });
 
   document.getElementById('btn-close-login')?.addEventListener('click', () => loginModal?.classList.remove('active'));
-  document.getElementById('btn-close-dashboard')?.addEventListener('click', () => {
-    dashboardModal?.classList.remove('active');
-    document.getElementById('admin-tab-bar')?.classList.remove('visible');
-    document.getElementById('fab-add-user')?.classList.remove('visible');
-  });
+  document.getElementById('btn-close-dashboard')?.addEventListener('click', () => dashboardModal?.classList.remove('active'));
 
   // Forzar cambio de contraseña en primer ingreso
   const btnForce = document.getElementById('btn-force-password');
@@ -908,8 +639,10 @@ function initApp() {
     if (p1 !== p2) { alert('Las contraseñas no coinciden.'); return; }
     btnForce.textContent = 'Actualizando...'; btnForce.disabled = true;
     try {
+      // Cambiar la contraseña del usuario actual
       const { error: updErr } = await supabaseClient.auth.updateUser({ password: p1 });
       if (updErr) throw updErr;
+      // Marcar que ya no requiere cambio
       if (window.currentUserData && window.currentUserData.id) {
         await supabaseClient.from('perfiles').update({ requiere_cambio_pass: false }).eq('id', window.currentUserData.id);
         window.currentUserData.requiere_cambio_pass = false;
@@ -922,18 +655,31 @@ function initApp() {
     btnForce.textContent = 'Actualizar Contraseña'; btnForce.disabled = false;
   });
 
+  document.getElementById('tab-btn-formularios')?.addEventListener('click', (e) => {
+    e.target.classList.replace('btn-secondary', 'btn-primary');
+    document.getElementById('tab-btn-usuarios')?.classList.replace('btn-primary', 'btn-secondary');
+    document.getElementById('panel-formularios').style.display = 'block';
+    document.getElementById('panel-usuarios').style.display = 'none';
+    loadDashboardData();
+  });
+
+  document.getElementById('tab-btn-usuarios')?.addEventListener('click', (e) => {
+    e.target.classList.replace('btn-secondary', 'btn-primary');
+    document.getElementById('tab-btn-formularios')?.classList.replace('btn-primary', 'btn-secondary');
+    document.getElementById('panel-usuarios').style.display = 'block';
+    document.getElementById('panel-formularios').style.display = 'none';
+    loadUsuariosData();
+  });
+
   let currentAdminData = null;
   function openAdminPreview(formData) {
     if (dashboardModal) dashboardModal.classList.remove('active');
-    document.getElementById('admin-tab-bar')?.classList.remove('visible');
-    document.getElementById('fab-add-user')?.classList.remove('visible');
     if (wizardContainer) wizardContainer.style.display = 'none';
     if (previewContainer) previewContainer.style.display = 'block';
     document.getElementById('preview-actions').style.display = 'none';
     document.getElementById('admin-actions').style.display = 'flex';
     currentAdminData = formData;
     const d = formData.datos_completos || formData;
-    document.getElementById('doc-empresa').innerText = d.empresa || '';
     document.getElementById('doc-cedula').innerText = d.cedula || '';
     document.getElementById('doc-nombre').innerText = d.nombre || '';
     const makeEditable = (id, val) => {
@@ -946,32 +692,31 @@ function initApp() {
     makeEditable('doc-observaciones', d.observaciones);
     makeEditable('doc-salario_quincenal', d.salario_quincenal);
     makeEditable('doc-salario_mensual', d.salario_mensual);
+    makeEditable('doc-escrito_nombre', d.escrito_nombre || '');
     makeEditable('doc-escrito_por', d.escrito_por || 'Generalista RH');
+    makeEditable('doc-aprobado_nombre', d.aprobado_nombre || '');
     makeEditable('doc-aprobado_por', d.aprobado_por || 'Gerencia Financiera');
     document.getElementById('doc-rige_desde').innerText = d.fecha_rige || d.rige_desde || '';
     document.getElementById('doc-hasta').innerText = d.fecha_hasta || d.hasta || '';
     document.getElementById('doc-dias_habiles').innerText = d.total_dias || d.dias_habiles || '';
     document.getElementById('doc-fecha_actual').innerText = d.fecha_actual || new Date(formData.created_at).toLocaleDateString();
     
-    // Update the grid with the specific action from the DB
-    populateOptionsGrid(d.tipo_accion);
-
-    const firmaEmp = formData.firma_empleado || d.firma_empleado;
-    if (firmaEmp && canvasEmpleado) { resizeCanvas(canvasEmpleado); const img = new Image(); img.onload = () => drawImageFitted(canvasEmpleado, img); img.src = firmaEmp; }
-    else if (canvasEmpleado) { resizeCanvas(canvasEmpleado); }
-    const firmaSup = formData.firma_jefatura || d.firma_superior;
-    if (firmaSup && canvasSuperior) { resizeCanvas(canvasSuperior); const imgS = new Image(); imgS.onload = () => drawImageFitted(canvasSuperior, imgS); imgS.src = firmaSup; }
-    else if (canvasSuperior) { resizeCanvas(canvasSuperior); }
-    const firmaRh = formData.firma_recursos_humanos || d.firma_rrhh;
-    if (firmaRh && canvasRRHH) { resizeCanvas(canvasRRHH); const imgR = new Image(); imgR.onload = () => drawImageFitted(canvasRRHH, imgR); imgR.src = firmaRh; }
-    else if (canvasRRHH) { resizeCanvas(canvasRRHH); }
-    if (canvasEmpleado) { canvasEmpleado.style.pointerEvents = 'none'; canvasEmpleado.oncontextmenu = (e) => { e.preventDefault(); return false; }; }
-    const controls = document.querySelectorAll('.sign-controls');
-    if (controls && controls[0]) controls[0].style.display = 'none';
-    if (controls && controls[1]) controls[1].style.display = 'flex';
-    if (controls && controls[2]) controls[2].style.display = 'flex';
+    if (d.firma_empleado) {
+      const img = new Image();
+      img.onload = () => {
+        const ctx = canvasEmpleado.getContext('2d');
+        if (ctx) {
+            ctx.clearRect(0,0, canvasEmpleado.width, canvasEmpleado.height);
+            ctx.drawImage(img, 0,0, canvasEmpleado.width, canvasEmpleado.height);
+        }
+      };
+      img.src = d.firma_empleado;
+    }
+    if (canvasEmpleado) canvasEmpleado.style.pointerEvents = 'none';
     [canvasSuperior, canvasRRHH].forEach(c => {
-      if (c) { const ctx = c.getContext('2d'); ctx.clearRect(0,0, c.width, c.height); c.style.pointerEvents = 'auto'; }
+      if (c) {
+          const ctx = c.getContext('2d'); ctx.clearRect(0,0, c.width, c.height); c.style.pointerEvents = 'auto';
+      }
     });
   }
 
@@ -979,10 +724,6 @@ function initApp() {
     if (previewContainer) previewContainer.style.display = 'none';
     if (wizardContainer) wizardContainer.style.display = 'block';
     if (dashboardModal) dashboardModal.classList.add('active');
-    document.getElementById('admin-tab-bar')?.classList.add('visible');
-    const controls = document.querySelectorAll('.sign-controls');
-    if (controls && controls[0]) controls[0].style.display = 'flex';
-    if (canvasEmpleado) { canvasEmpleado.style.pointerEvents = 'auto'; canvasEmpleado.oncontextmenu = null; }
   });
 
   document.getElementById('btn-admin-save')?.addEventListener('click', async () => {
@@ -1004,7 +745,9 @@ function initApp() {
       dc.nombre_puesto = document.getElementById('doc-nombre_puesto').innerText;
       dc.salario_quincenal = document.getElementById('doc-salario_quincenal').innerText;
       dc.salario_mensual = document.getElementById('doc-salario_mensual').innerText;
+      dc.escrito_nombre = document.getElementById('doc-escrito_nombre').innerText;
       dc.escrito_por = document.getElementById('doc-escrito_por').innerText;
+      dc.aprobado_nombre = document.getElementById('doc-aprobado_nombre').innerText;
       dc.aprobado_por = document.getElementById('doc-aprobado_por').innerText;
       dc.observaciones = document.getElementById('doc-observaciones').innerText;
       await supabaseClient.from('formularios').update({
@@ -1021,108 +764,45 @@ function initApp() {
     btn.textContent = 'Guardar Firmas Admin'; btn.disabled = false;
   });
 
-  // ========================================
-  // PREMIUM CARD-BASED RENDERING
-  // ========================================
   window.allFormularios = [];
-
-  function showSkeletonCards(container, count) {
-    if (!container) return;
-    container.innerHTML = '';
-    for (let i = 0; i < count; i++) {
-      container.innerHTML += '<div class="skeleton skeleton-card"></div>';
-    }
-  }
-
   async function loadDashboardData() {
-    const container = document.getElementById('formularios-cards');
-    showSkeletonCards(container, 3);
+    const tbody = document.getElementById('formularios-tbody');
+    if (tbody) tbody.innerHTML = '<tr><td colspan="5" style="padding: 20px; text-align: center;">Cargando...</td></tr>';
     if (!supabaseClient) return;
     const { data, error } = await supabaseClient.from('formularios').select('*').order('created_at', { ascending: false });
-    if (error) {
-      if (container) container.innerHTML = '<div class="empty-state"><p>Error al cargar datos</p></div>';
-      return;
-    }
+    if (error) { if (tbody) tbody.innerHTML = `<tr><td colspan="5" style="padding: 20px; text-align: center; color: red;">Error.</td></tr>`; return; }
     window.allFormularios = data || [];
     renderFormularios();
   }
 
   function renderFormularios() {
-    const container = document.getElementById('formularios-cards');
-    if (!container) return;
+    const tbody = document.getElementById('formularios-tbody');
+    if (!tbody) return;
     const search = document.getElementById('filter-search').value.toLowerCase();
-    const status = currentStatusFilter;
+    const status = document.getElementById('filter-status').value;
     let filtered = window.allFormularios;
     if (status) filtered = filtered.filter(f => (f.estado || 'Pendiente de firma') === status);
     if (search) filtered = filtered.filter(f => (f.nombre && f.nombre.toLowerCase().includes(search)) || (f.cedula && f.cedula.toLowerCase().includes(search)));
-    
-    // Update count
-    const countEl = document.getElementById('form-count');
-    if (countEl) countEl.textContent = filtered.length;
-
-    if (filtered.length === 0) {
-      container.innerHTML = `<div class="empty-state">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-        <p>No hay formularios</p>
-      </div>`;
-      return;
-    }
-
-    container.innerHTML = '';
+    if (filtered.length === 0) { tbody.innerHTML = '<tr><td colspan="5" style="padding: 20px; text-align: center;">Sin coincidencias.</td></tr>'; return; }
+    tbody.innerHTML = '';
     filtered.forEach(form => {
+      const tr = document.createElement('tr');
+      tr.style.borderBottom = "1px solid #e2e8f0";
       const estado = form.estado || 'Pendiente de firma';
-      const isDone = estado === 'Completado';
-      const statusClass = isDone ? 'status-tag--done' : 'status-tag--pending';
-      const statusLabel = isDone ? 'Completado' : 'Pendiente';
-      const date = new Date(form.created_at).toLocaleDateString('es-CR', { day: '2-digit', month: 'short', year: 'numeric' });
-      const tipoAccion = (form.datos_completos && form.datos_completos.tipo_accion) ? form.datos_completos.tipo_accion : (form.tipo_accion || '');
-
-      const card = document.createElement('div');
-      card.className = 'admin-card';
-      card.innerHTML = `
-        <div class="card-header">
-          <div>
-            <div class="card-name">${form.nombre || 'Sin nombre'}</div>
-            <div class="card-cedula">${form.cedula || '—'}</div>
-          </div>
-          <span class="status-tag ${statusClass}">${statusLabel}</span>
-        </div>
-        ${tipoAccion ? `<div style="font-size: 0.8125rem; color: var(--admin-text-secondary); margin-bottom: 4px;">${tipoAccion}</div>` : ''}
-        <div class="card-footer">
-          <span class="card-date">
-            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-            ${date}
-          </span>
-          <button class="card-action-btn" data-id="${form.id}">Ver / Firmar</button>
-        </div>
+      tr.innerHTML = `
+        <td style="padding: 12px;">${new Date(form.created_at).toLocaleDateString()}</td>
+        <td style="padding: 12px;">${form.cedula || '-'}</td>
+        <td style="padding: 12px;">${form.nombre || '-'}</td>
+        <td style="padding: 12px; color: ${estado === 'Completado' ? 'var(--success)' : 'orange'};">${estado}</td>
+        <td style="padding: 12px;"><button class="btn btn-primary" style="padding: 6px 12px;">Ver / Firmar</button></td>
       `;
-      card.querySelector('.card-action-btn').addEventListener('click', (e) => {
-        e.stopPropagation();
-        openAdminPreview(form);
-      });
-      container.appendChild(card);
+      tr.querySelector('button').addEventListener('click', () => openAdminPreview(form));
+      tbody.appendChild(tr);
     });
   }
 
-  // Debounced search
-  let searchTimer;
-  document.getElementById('filter-search')?.addEventListener('input', () => {
-    clearTimeout(searchTimer);
-    searchTimer = setTimeout(renderFormularios, 300);
-  });
-
-  // ========================================
-  // USER MANAGEMENT (CARDS)
-  // ========================================
-  let allUsuarios = [];
-  const addUserModal = document.getElementById('add-user-modal');
-  const userSearchInput = document.getElementById('user-search');
-
-  // FAB + Add User Modal
-  document.getElementById('fab-add-user')?.addEventListener('click', () => addUserModal?.classList.add('active'));
-  if (addUserModal) addUserModal.addEventListener('click', (e) => { if (e.target === addUserModal) addUserModal.classList.remove('active'); });
-  document.getElementById('btn-cancel-add-user')?.addEventListener('click', () => addUserModal?.classList.remove('active'));
-  if (userSearchInput) userSearchInput.addEventListener('input', () => renderUsuariosCards());
+  document.getElementById('filter-search')?.addEventListener('input', renderFormularios);
+  document.getElementById('filter-status')?.addEventListener('change', renderFormularios);
 
   document.getElementById('btn-create-user')?.addEventListener('click', async () => {
     if (!supabaseClient) return;
@@ -1140,12 +820,17 @@ function initApp() {
         const currentSession = await supabaseClient.auth.getSession();
         const { data, error } = await supabaseClient.auth.signUp({ email, password });
         if (error) throw error;
+        
         if (data.user) {
             const { error: insertErr } = await supabaseClient.from('perfiles').insert([{
-                id: data.user.id, email: email, rol: role, requiere_cambio_pass: true
+                id: data.user.id,
+                email: email,
+                rol: role,
+                requiere_cambio_pass: true
             }]);
             if (insertErr) throw insertErr;
         }
+
         await supabaseClient.auth.signOut();
         if (currentSession && currentSession.data && currentSession.data.session) {
             await supabaseClient.auth.setSession({ access_token: currentSession.data.session.access_token, refresh_token: currentSession.data.session.refresh_token });
@@ -1153,7 +838,7 @@ function initApp() {
         if (msg) { msg.style.color = 'var(--success)'; msg.textContent = '¡Creado!'; }
         document.getElementById('new-user-email').value = ''; 
         document.getElementById('new-user-password').value = '';
-        setTimeout(() => addUserModal?.classList.remove('active'), 1500);
+        setTimeout(() => document.getElementById('add-user-modal')?.classList.remove('active'), 1500);
         loadUsuariosData();
     } catch(err) {
         if (msg) { msg.style.color = 'red'; msg.textContent = 'Error: ' + err.message; }
@@ -1161,82 +846,70 @@ function initApp() {
     setTimeout(() => { if (msg) msg.style.display = 'none'; }, 5000);
   });
 
+  // GESTIÓN USUARIOS
+  const addUserModal = document.getElementById('add-user-modal');
+  const userSearchInput = document.getElementById('user-search');
+  if (addUserModal) addUserModal.addEventListener('click', (e) => { if (e.target === addUserModal) addUserModal.classList.remove('active'); });
+  document.getElementById('btn-show-add-user')?.addEventListener('click', () => addUserModal?.classList.add('active'));
+  document.getElementById('btn-cancel-add-user')?.addEventListener('click', () => addUserModal?.classList.remove('active'));
+  if (userSearchInput) userSearchInput.addEventListener('input', () => renderUsuariosTable());
+
+  let allUsuarios = [];
   async function loadUsuariosData() {
-    const container = document.getElementById('usuarios-cards');
-    showSkeletonCards(container, 3);
+    const tbody = document.getElementById('usuarios-tbody');
+    if (tbody) tbody.innerHTML = '<tr><td colspan="5" style="padding: 40px; text-align: center;">Cargando...</td></tr>';
     if (!supabaseClient) return;
     try {
       const { data, error } = await supabaseClient.from('perfiles').select('*');
       if (error) throw error;
       allUsuarios = data || [];
-      renderUsuariosCards();
+      renderUsuariosTable();
     } catch (error) {
-      if (container) container.innerHTML = `<div class="empty-state"><p>Error: ${error.message}</p></div>`;
+      if (tbody) tbody.innerHTML = `<tr><td colspan="5" style="padding: 40px; text-align: center; color: var(--danger);">Error: ${error.message}</td></tr>`;
     }
   }
 
-  function renderUsuariosCards() {
-    const container = document.getElementById('usuarios-cards');
-    if (!container) return;
+  function renderUsuariosTable() {
+    const tbody = document.getElementById('usuarios-tbody');
+    if (!tbody) return;
     const search = userSearchInput ? userSearchInput.value.toLowerCase() : '';
     const isSuper = window.currentUserData.rol === 'superadmin';
+    
     let filtered = [...allUsuarios];
-    if (!isSuper) filtered = filtered.filter(u => u.rol === 'usuario');
-    if (search) filtered = filtered.filter(u => u.email && u.email.toLowerCase().includes(search));
-
-    const countEl = document.getElementById('user-count');
-    if (countEl) countEl.textContent = filtered.length;
-
-    if (filtered.length === 0) {
-      container.innerHTML = `<div class="empty-state">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"/></svg>
-        <p>No hay usuarios registrados</p>
-      </div>`;
-      return;
+    
+    // FILTRO JERÁRQUICO
+    if (!isSuper) {
+        // Admins solo ven usuarios (no admins ni superadmin)
+        filtered = filtered.filter(u => u.rol === 'usuario');
     }
+    // Superadmin ve a todos
 
-    container.innerHTML = '';
+    if (search) filtered = filtered.filter(u => u.email && u.email.toLowerCase().includes(search));
+    if (filtered.length === 0) { tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 40px;">Sin resultados.</td></tr>'; return; }
+    tbody.innerHTML = '';
     filtered.forEach(user => {
-      const initials = (user.email || '??').substring(0, 2).toUpperCase();
+      const initials = (user.email||'??').substring(0,2).toUpperCase();
+      const tr = document.createElement('tr');
       const roleClass = user.rol === 'superadmin' ? 'role-superadmin' : '';
-      const isActive = user.activo !== false;
+      const isActive = user.activo !== false; // default true
       const statusClass = isActive ? 'status-active' : 'status-inactive';
       const statusLabel = isActive ? 'Activo' : 'Inactivo';
       const canManage = isSuper || user.rol === 'usuario';
       const canDelete = (isSuper && user.rol !== 'superadmin') || (!isSuper && user.rol === 'usuario');
-
-      const card = document.createElement('div');
-      card.className = 'user-card';
-      card.innerHTML = `
-        <div class="user-card-header">
-          <div class="user-avatar">${initials}</div>
-          <div class="user-card-info">
-            <div class="user-card-email">${user.nombre || user.email}</div>
-            <div class="user-card-meta">
-              <span class="role-tag ${roleClass}">${user.rol}</span>
-              <span class="status-badge ${statusClass}">${statusLabel}</span>
-            </div>
-          </div>
-        </div>
-        ${canManage ? `<div class="user-card-actions">
-          <button class="btn-icon" onclick="openEditUser('${user.id}')" title="Editar">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-            Editar
-          </button>
-          <button class="btn-icon" onclick="openResetPassword('${user.id}')" title="Reset">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
-            Clave
-          </button>
-          ${canDelete ? `<button class="btn-icon delete" onclick="deleteUser('${user.id}')" title="Eliminar">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-            Borrar
-          </button>` : ''}
-        </div>` : ''}
+      tr.innerHTML = `
+        <td><div class="user-info"><div class="user-avatar">${initials}</div><div><div style="font-weight:600;">${user.nombre ? user.nombre : user.email}</div><div style="font-size:0.75rem; color:var(--text-muted);">${user.email}${user.nombre ? ` · ${(user.id||'').substring(0,8)}...` : ''}</div></div></div></td>
+        <td><span class="role-tag ${roleClass}">${user.rol}</span></td>
+        <td><span class="status-badge ${statusClass}">${statusLabel}</span></td>
+        <td style="color:var(--text-muted);">${user.ultimo_acceso ? new Date(user.ultimo_acceso).toLocaleDateString() : 'Nunca'}</td>
+        <td><div class="action-buttons">
+          ${canManage ? `<button class="btn-icon" onclick="openEditUser('${user.id}')" title="Editar"><svg xmlns=\"http://www.w3.org/2000/svg\" style=\"width:16px;height:16px;\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M11 5h2m-1 0v14m7-7H5\" /></svg></button>` : ''}
+          ${canManage ? `<button class=\"btn-icon\" onclick=\"openResetPassword('${user.id}')\" title=\"Reset Clave\"><svg xmlns=\"http://www.w3.org/2000/svg\" style=\"width:16px;height:16px;\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z\" /></svg></button>` : ''}
+          ${canDelete ? `<button class=\"btn-icon delete\" onclick=\"deleteUser('${user.id}')\" title=\"Eliminar\"><svg xmlns=\"http://www.w3.org/2000/svg\" style=\"width:16px;height:16px;\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16\" /></svg></button>` : ''}
+        </div></td>
       `;
-      container.appendChild(card);
+      tbody.appendChild(tr);
     });
   }
-
 
   // Edit user modal logic
   const editUserModal = document.getElementById('edit-user-modal');
