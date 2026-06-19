@@ -1,5 +1,5 @@
 // Service Worker for Orden Personal PWA
-const CACHE_NAME = 'orden-pwa-v4';
+const CACHE_NAME = 'orden-pwa-v5';
 const ASSETS = [
   './index.html',
   './manifest.json',
