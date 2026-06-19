@@ -382,7 +382,25 @@ function initApp() {
     populateOptionsGrid();
   }
 
+  let isSubmittingForm = false;
   async function mobileSharePdfFlow() {
+    if (isSubmittingForm) return;
+    isSubmittingForm = true;
+
+    const btnPreview = document.getElementById('btn-preview');
+    const btnMobileDone = document.getElementById('btn-mobile-done');
+    const originalPreviewText = btnPreview ? btnPreview.textContent : '';
+    const originalDoneText = btnMobileDone ? btnMobileDone.textContent : '';
+
+    if (btnPreview) {
+      btnPreview.disabled = true;
+      btnPreview.textContent = 'Generando...';
+    }
+    if (btnMobileDone) {
+      btnMobileDone.disabled = true;
+      btnMobileDone.textContent = 'Generando...';
+    }
+
     // Poblar campos antes de exportar
     populatePreviewFields();
     // Ocultar controles de firma durante render
@@ -427,7 +445,9 @@ function initApp() {
             total_dias: datosFormulario.total_dias, datos_completos: datosFormulario,
             firma_empleado: firmaEmpleado, estado: 'Pendiente de firma'
           }]);
-        } catch {}
+        } catch (e) {
+          console.error("Error inserting form:", e);
+        }
       }
       // Opción C: en móvil, abrir el PDF en una nueva pestaña para visualizarlo primero
       if (isMobileDevice()) {
@@ -448,6 +468,16 @@ function initApp() {
       if (wrapper) wrapper.style.overflowX = originalOverflow; 
       if (docSheet) docSheet.style.transform = originalTransform;
       document.querySelectorAll('.sign-controls').forEach(el => el.style.display = 'flex');
+
+      isSubmittingForm = false;
+      if (btnPreview) {
+        btnPreview.disabled = false;
+        btnPreview.textContent = originalPreviewText;
+      }
+      if (btnMobileDone) {
+        btnMobileDone.disabled = false;
+        btnMobileDone.textContent = originalDoneText;
+      }
     }
   }
 
@@ -512,6 +542,14 @@ function initApp() {
 
   if (btnPreview) {
     btnPreview.addEventListener('click', () => {
+      // Validar campos requeridos mínimos para evitar registros vacíos
+      const cedula = document.getElementById('cedula').value.trim();
+      const nombre = document.getElementById('nombre').value.trim();
+      if (!cedula || !nombre) {
+        alert('Por favor complete la Cédula y el Nombre completo antes de generar el documento.');
+        return;
+      }
+
       // Gate: en móvil, si no hay firma del empleado todavía, abrir captura full-screen primero
       if (isMobileDevice()) {
         if (padEmpleado && padEmpleado.isEmpty()) { openMobileSign(); return; }
