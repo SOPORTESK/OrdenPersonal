@@ -837,7 +837,7 @@ function initApp() {
     const roleGroup = document.getElementById('role-selection-group');
     const editRoleGroup = document.getElementById('edit-role-group');
 
-    if (tabUsers) tabUsers.style.display = isSuper ? 'flex' : 'none';
+    if (tabUsers) tabUsers.style.display = (isSuper || window.currentUserData.rol === 'admin') ? 'flex' : 'none';
     if (tabBar) tabBar.classList.add('visible');
     if (roleGroup) roleGroup.style.display = isSuper ? 'block' : 'none';
 
@@ -873,7 +873,7 @@ function initApp() {
     // Show/hide FAB
     const fab = document.getElementById('fab-add-user');
     if (fab) {
-      fab.classList.toggle('visible', viewId === 'view-usuarios' && window.currentUserData.rol === 'superadmin');
+      fab.classList.toggle('visible', viewId === 'view-usuarios' && (window.currentUserData.rol === 'superadmin' || window.currentUserData.rol === 'admin'));
     }
 
     // Load data
