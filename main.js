@@ -874,10 +874,12 @@ function initApp() {
     const tabBar = document.getElementById('admin-tab-bar');
     const roleGroup = document.getElementById('role-selection-group');
     const editRoleGroup = document.getElementById('edit-role-group');
+    const btnDeleteAll = document.getElementById('btn-delete-all-forms');
 
     if (tabUsers) tabUsers.style.display = (isSuper || window.currentUserData.rol === 'admin') ? 'flex' : 'none';
     if (tabBar) tabBar.classList.add('visible');
     if (roleGroup) roleGroup.style.display = isSuper ? 'block' : 'none';
+    if (btnDeleteAll) btnDeleteAll.style.display = isSuper ? 'block' : 'none';
 
     if (loginModal) loginModal.classList.remove('active');
     if (dashboardModal) dashboardModal.classList.add('active');
@@ -935,6 +937,27 @@ function initApp() {
     dashboardModal?.classList.remove('active');
     document.getElementById('admin-tab-bar')?.classList.remove('visible');
     document.getElementById('fab-add-user')?.classList.remove('visible');
+    document.getElementById('btn-delete-all-forms')?.style.setProperty('display', 'none');
+  });
+
+  document.getElementById('btn-delete-all-forms')?.addEventListener('click', async () => {
+    const isSuper = window.currentUserData && window.currentUserData.rol === 'superadmin';
+    if (!isSuper) return;
+    
+    const confirm1 = confirm('¡ADVERTENCIA CRÍTICA!\n¿Está completamente seguro de que desea eliminar TODOS los formularios registrados? Esta acción eliminará permanentemente todos los registros y sus firmas, y no se puede deshacer.');
+    if (!confirm1) return;
+    
+    const confirm2 = confirm('Por favor confirme una vez más: ¿Eliminar absolutamente todos los formularios del sistema?');
+    if (!confirm2) return;
+    
+    try {
+      const { error } = await supabaseClient.from('formularios').delete().neq('id', 0);
+      if (error) throw error;
+      alert('Todos los formularios han sido eliminados correctamente.');
+      loadDashboardData();
+    } catch (err) {
+      alert('Error al eliminar formularios: ' + err.message);
+    }
   });
 
   // Forzar cambio de contraseña en primer ingreso
@@ -1107,6 +1130,7 @@ function initApp() {
     }
 
     container.innerHTML = '';
+    const isSuper = window.currentUserData && window.currentUserData.rol === 'superadmin';
     filtered.forEach(form => {
       const estado = form.estado || 'Pendiente de firma';
       const isDone = estado === 'Completado';
@@ -1131,13 +1155,35 @@ function initApp() {
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
             ${date}
           </span>
-          <button class="card-action-btn" data-id="${form.id}">Ver / Firmar</button>
+          <div style="display: flex; gap: 8px; align-items: center;">
+            ${isSuper ? `
+              <button class="card-delete-btn" data-id="${form.id}" title="Eliminar formulario" style="background: none; border: 1px solid var(--danger-soft); color: var(--danger); padding: 8px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+              </button>
+            ` : ''}
+            <button class="card-action-btn" data-id="${form.id}">Ver / Firmar</button>
+          </div>
         </div>
       `;
       card.querySelector('.card-action-btn').addEventListener('click', (e) => {
         e.stopPropagation();
         openAdminPreview(form);
       });
+      if (isSuper) {
+        card.querySelector('.card-delete-btn').addEventListener('click', async (e) => {
+          e.stopPropagation();
+          if (confirm(`¿Está seguro de que desea eliminar el formulario de ${form.nombre || 'Sin nombre'}? Esta acción no se puede deshacer.`)) {
+            try {
+              const { error } = await supabaseClient.from('formularios').delete().eq('id', form.id);
+              if (error) throw error;
+              alert('Formulario eliminado correctamente.');
+              loadDashboardData();
+            } catch (err) {
+              alert('Error al eliminar formulario: ' + err.message);
+            }
+          }
+        });
+      }
       container.appendChild(card);
     });
   }

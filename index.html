@@ -398,9 +398,10 @@
             <button class="filter-chip" data-status="Pendiente de firma">Pendientes</button>
             <button class="filter-chip" data-status="Completado">Completados</button>
           </div>
-          <div class="section-header">
+          <div class="section-header" style="display: flex; align-items: center; width: 100%;">
             <span class="section-title">Formularios</span>
             <span class="section-count" id="form-count">0</span>
+            <button id="btn-delete-all-forms" style="display: none; margin-left: auto; background: none; border: 1px solid var(--danger-soft); color: var(--danger); padding: 6px 12px; border-radius: 8px; font-size: 0.75rem; font-weight: 600; cursor: pointer; transition: all 0.2s;">Eliminar Todos</button>
           </div>
           <div id="formularios-cards"></div>
         </div>
