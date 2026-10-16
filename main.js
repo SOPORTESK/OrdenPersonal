@@ -967,6 +967,13 @@ function initApp() {
     const roleGroup = document.getElementById('role-selection-group');
     const editRoleGroup = document.getElementById('edit-role-group');
     const btnDeleteAll = document.getElementById('btn-delete-all-forms');
+    const userIndicator = document.getElementById('admin-user-indicator');
+
+    if (userIndicator && window.currentUserData) {
+      const displayUser = window.currentUserData.nombre || window.currentUserData.email || 'Administrador';
+      const roleLabel = isSuper ? 'Superadmin' : 'Jefatura / RRHH';
+      userIndicator.textContent = `${displayUser} · ${roleLabel}`;
+    }
 
     if (tabUsers) tabUsers.style.display = (isSuper || window.currentUserData.rol === 'admin') ? 'flex' : 'none';
     if (tabBar) tabBar.classList.add('visible');
@@ -1013,14 +1020,24 @@ function initApp() {
     if (viewId === 'view-usuarios') loadUsuariosData();
   }
 
-  // --- Filter Chips ---
+  // --- Filter Chips & KPI Cards ---
   let currentStatusFilter = '';
+  function applyStatusFilter(statusVal) {
+    currentStatusFilter = statusVal;
+    document.querySelectorAll('#filter-chips .filter-chip').forEach(c => {
+      c.classList.toggle('active', c.dataset.status === statusVal);
+    });
+    renderFormularios();
+  }
+
   document.querySelectorAll('#filter-chips .filter-chip').forEach(chip => {
-    chip.addEventListener('click', () => {
-      document.querySelectorAll('#filter-chips .filter-chip').forEach(c => c.classList.remove('active'));
-      chip.classList.add('active');
-      currentStatusFilter = chip.dataset.status;
-      renderFormularios();
+    chip.addEventListener('click', () => applyStatusFilter(chip.dataset.status));
+  });
+
+  document.querySelectorAll('.admin-kpi-card').forEach(kpiCard => {
+    kpiCard.addEventListener('click', () => {
+      const filterVal = kpiCard.getAttribute('data-kpi-filter') ?? '';
+      applyStatusFilter(filterVal);
     });
   });
 
@@ -1280,7 +1297,7 @@ function initApp() {
 
   async function loadDashboardData() {
     const container = document.getElementById('formularios-cards');
-    showSkeletonCards(container, 3);
+    showSkeletonCards(container, 4);
     if (!supabaseClient) return;
     const { data, error } = await supabaseClient.from('formularios').select('*').order('created_at', { ascending: false });
     if (error) {
@@ -1298,11 +1315,51 @@ function initApp() {
     return estado === 'Completado' || estado.startsWith('Aprobada') || hasJefSig || hasRhSig;
   }
 
+  function getInitials(name) {
+    if (!name) return 'SK';
+    const parts = name.trim().split(/\s+/).filter(Boolean);
+    if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
+    return (parts[0][0] + parts[parts.length > 2 ? 2 : 1][0]).toUpperCase();
+  }
+
+  function formatShortDate(dateStr) {
+    if (!dateStr) return '';
+    // Si viene como YYYY-MM-DD
+    const parts = String(dateStr).split('-');
+    if (parts.length === 3 && parts[0].length === 4) {
+      const d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+      if (!isNaN(d.getTime())) {
+        return d.toLocaleDateString('es-CR', { day: '2-digit', month: 'short', year: 'numeric' });
+      }
+    }
+    return dateStr;
+  }
+
   function renderFormularios() {
     const container = document.getElementById('formularios-cards');
     if (!container) return;
-    const search = document.getElementById('filter-search').value.toLowerCase();
+    const search = (document.getElementById('filter-search')?.value || '').toLowerCase().trim();
     const status = currentStatusFilter;
+
+    // Actualizar contadores KPI y Chips sobre el total
+    const totalAll = window.allFormularios.length;
+    const totalApproved = window.allFormularios.filter(f => isFormApproved(f)).length;
+    const totalPending = totalAll - totalApproved;
+
+    const kpiTotalEl = document.getElementById('kpi-total-count');
+    const kpiPendEl = document.getElementById('kpi-pending-count');
+    const kpiApprEl = document.getElementById('kpi-approved-count');
+    if (kpiTotalEl) kpiTotalEl.textContent = totalAll;
+    if (kpiPendEl) kpiPendEl.textContent = totalPending;
+    if (kpiApprEl) kpiApprEl.textContent = totalApproved;
+
+    const chipAllEl = document.getElementById('chip-count-all');
+    const chipPendEl = document.getElementById('chip-count-pending');
+    const chipDoneEl = document.getElementById('chip-count-done');
+    if (chipAllEl) chipAllEl.textContent = totalAll;
+    if (chipPendEl) chipPendEl.textContent = totalPending;
+    if (chipDoneEl) chipDoneEl.textContent = totalApproved;
+
     let filtered = window.allFormularios;
     if (status === 'Completado') {
       filtered = filtered.filter(f => isFormApproved(f));
@@ -1311,16 +1368,31 @@ function initApp() {
     } else if (status) {
       filtered = filtered.filter(f => (f.estado || 'Pendiente de firma') === status);
     }
-    if (search) filtered = filtered.filter(f => (f.nombre && f.nombre.toLowerCase().includes(search)) || (f.cedula && f.cedula.toLowerCase().includes(search)));
+
+    if (search) {
+      filtered = filtered.filter(f => {
+        const dc = f.datos_completos || {};
+        const haystack = [
+          f.nombre,
+          f.cedula,
+          f.tipo_accion || dc.tipo_accion,
+          dc.nombre_puesto,
+          dc.centro_funcional,
+          dc.empresa,
+          f.nombre_jefatura || dc.nombre_jefatura
+        ].filter(Boolean).join(' ').toLowerCase();
+        return haystack.includes(search);
+      });
+    }
     
-    // Update count
+    // Update filtered count
     const countEl = document.getElementById('form-count');
     if (countEl) countEl.textContent = filtered.length;
 
     if (filtered.length === 0) {
       container.innerHTML = `<div class="empty-state">
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-        <p>No hay formularios</p>
+        <p>No se encontraron solicitudes con este filtro</p>
       </div>`;
       return;
     }
@@ -1328,47 +1400,103 @@ function initApp() {
     container.innerHTML = '';
     const isSuper = window.currentUserData && window.currentUserData.rol === 'superadmin';
     filtered.forEach(form => {
+      const dc = form.datos_completos || {};
       const isDone = isFormApproved(form);
+      const hasEmpSig = Boolean(form.firma_empleado || dc.firma_empleado);
+      const hasJefSig = Boolean(form.firma_jefatura || dc.firma_superior || dc.firma_jefatura || isDone);
+      const hasRhSig = Boolean(form.firma_recursos_humanos || dc.firma_rrhh || dc.firma_recursos_humanos);
+
       const approverName = form.nombre_jefatura
-        || (form.datos_completos && form.datos_completos.nombre_jefatura)
+        || dc.nombre_jefatura
         || form.nombre_recursos_humanos
-        || (form.datos_completos && form.datos_completos.aprobado_por)
         || '';
+      const shortApprover = approverName && approverName !== 'Nombre' && approverName !== 'Jefatura Inmediata'
+        ? approverName.split(/\s+/).slice(0, 2).join(' ')
+        : '';
+
       const statusClass = isDone ? 'status-tag--done' : 'status-tag--pending';
       const statusLabel = isDone
-        ? (approverName && approverName !== 'Nombre' && approverName !== 'Jefatura Inmediata'
-            ? `Aprobada por: ${approverName}`
-            : 'Aprobada')
+        ? (shortApprover ? `Aprobada · ${shortApprover}` : 'Aprobada')
         : 'Pendiente';
-      const date = new Date(form.created_at).toLocaleDateString('es-CR', { day: '2-digit', month: 'short', year: 'numeric' });
-      const tipoAccion = (form.datos_completos && form.datos_completos.tipo_accion) ? form.datos_completos.tipo_accion : (form.tipo_accion || '');
+
+      const createdDate = new Date(form.created_at).toLocaleDateString('es-CR', { day: '2-digit', month: 'short', year: 'numeric' });
+      const tipoAccion = dc.tipo_accion || form.tipo_accion || 'ACCIÓN DE PERSONAL';
+      const puesto = dc.nombre_puesto || dc.codigo_puesto || '';
+      const depto = dc.centro_funcional || dc.empresa || '';
+      const deptSummary = [puesto, depto].filter(Boolean).join(' · ');
+
+      const rige = formatShortDate(form.fecha_rige || dc.fecha_rige);
+      const hasta = formatShortDate(form.fecha_hasta || dc.fecha_hasta);
+      const totalDias = form.total_dias || dc.total_dias || '';
+      const periodText = (rige && hasta)
+        ? `Rige: ${rige} → Hasta: ${hasta}`
+        : (rige ? `Rige desde: ${rige}` : `Solicitado el ${createdDate}`);
+
+      const initials = getInitials(form.nombre);
 
       const card = document.createElement('div');
-      card.className = 'admin-card';
+      card.className = `admin-card ${isDone ? 'admin-card--approved' : ''}`;
       card.innerHTML = `
-        <div class="card-header">
-          <div>
-            <div class="card-name">${form.nombre || 'Sin nombre'}</div>
-            <div class="card-cedula">${form.cedula || '—'}</div>
+        <div>
+          <div class="card-header">
+            <div class="card-employee">
+              <div class="card-avatar">${initials}</div>
+              <div class="card-employee-info">
+                <div class="card-name" title="${form.nombre || ''}">${form.nombre || 'Sin nombre'}</div>
+                <div class="card-submeta">
+                  <span class="card-cedula">ID: ${form.cedula || '—'}</span>
+                  ${deptSummary ? `<span class="card-dot">•</span><span class="card-dept" title="${deptSummary}">${deptSummary}</span>` : ''}
+                </div>
+              </div>
+            </div>
+            <span class="status-tag ${statusClass}" title="${isDone && approverName ? 'Aprobada por: ' + approverName : statusLabel}">${statusLabel}</span>
           </div>
-          <span class="status-tag ${statusClass}">${statusLabel}</span>
+
+          <div class="card-details-box">
+            <div class="card-action-row">
+              <span class="card-action-type">
+                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                ${tipoAccion}
+              </span>
+              ${totalDias ? `<span class="card-days-pill">${totalDias} ${Number(totalDias) === 1 ? 'día hábil' : 'días hábiles'}</span>` : ''}
+            </div>
+            <div class="card-period-row">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+              <span>${periodText}</span>
+            </div>
+          </div>
+
+          <div class="card-pipeline">
+            <span class="sig-step ${hasEmpSig ? 'sig-step--done' : 'sig-step--wait'}">
+              ${hasEmpSig ? '✓' : '•'} Empleado
+            </span>
+            <span class="sig-step ${hasJefSig ? 'sig-step--done' : 'sig-step--wait'}">
+              ${hasJefSig ? `✓ Jefatura${shortApprover ? ': ' + shortApprover : ''}` : '⏳ Jefatura'}
+            </span>
+            <span class="sig-step ${hasRhSig ? 'sig-step--done' : ''}">
+              ${hasRhSig ? '✓ RRHH' : '• RRHH'}
+            </span>
+          </div>
         </div>
-        ${tipoAccion ? `<div style="font-size: 0.8125rem; color: var(--admin-text-secondary); margin-bottom: 4px;">${tipoAccion}</div>` : ''}
+
         <div class="card-footer">
-          <span class="card-date">
-            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-            ${date}
+          <span class="card-date" title="Fecha de registro">
+            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            Reg: ${createdDate}
           </span>
           <div style="display: flex; gap: 8px; align-items: center;">
             ${isSuper ? `
-              <button class="card-delete-btn" data-id="${form.id}" title="Eliminar formulario" style="background: none; border: 1px solid var(--danger-soft); color: var(--danger); padding: 8px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s;">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+              <button class="card-delete-btn" data-id="${form.id}" title="Eliminar expediente" style="background: none; border: 1px solid var(--danger-soft); color: var(--danger); padding: 7px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
               </button>
             ` : ''}
-            <button class="card-action-btn" data-id="${form.id}">Ver / Firmar</button>
+            <button class="card-action-btn" data-id="${form.id}">
+              ${isDone ? 'Ver Documento' : 'Revisar y Firmar'}
+            </button>
           </div>
         </div>
       `;
+      card.addEventListener('click', () => openAdminPreview(form));
       card.querySelector('.card-action-btn').addEventListener('click', (e) => {
         e.stopPropagation();
         openAdminPreview(form);

@@ -379,7 +379,15 @@
     <div class="modal-content glass-panel">
       <!-- Top Bar -->
       <div class="admin-topbar">
-        <span class="admin-topbar-title">Panel de Administración</span>
+        <div class="admin-topbar-brand">
+          <div class="admin-topbar-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+          </div>
+          <div>
+            <span class="admin-topbar-title">Gestión de Acciones de Personal</span>
+            <span class="admin-topbar-subtitle" id="admin-user-indicator">Recursos Humanos · Control de Firmas</span>
+          </div>
+        </div>
         <button id="btn-close-dashboard" class="admin-topbar-close" aria-label="Cerrar">
           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
         </button>
@@ -389,21 +397,56 @@
       <div class="admin-content">
         <!-- VIEW: Formularios -->
         <div id="view-formularios" class="admin-view active">
-          <div class="admin-search-bar">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-            <input type="text" id="filter-search" placeholder="Buscar por nombre o cédula..." autocomplete="off" />
+          <!-- KPI Summary Strip -->
+          <div class="admin-kpi-grid">
+            <div class="admin-kpi-card kpi-total" data-kpi-filter="">
+              <div class="kpi-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+              </div>
+              <div class="kpi-info">
+                <span class="kpi-value" id="kpi-total-count">0</span>
+                <span class="kpi-label">Total Solicitudes</span>
+              </div>
+            </div>
+            <div class="admin-kpi-card kpi-pending" data-kpi-filter="Pendiente de firma">
+              <div class="kpi-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              </div>
+              <div class="kpi-info">
+                <span class="kpi-value" id="kpi-pending-count">0</span>
+                <span class="kpi-label">Pendientes de Firma</span>
+              </div>
+            </div>
+            <div class="admin-kpi-card kpi-approved" data-kpi-filter="Completado">
+              <div class="kpi-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              </div>
+              <div class="kpi-info">
+                <span class="kpi-value" id="kpi-approved-count">0</span>
+                <span class="kpi-label">Aprobadas</span>
+              </div>
+            </div>
           </div>
-          <div class="admin-filter-row" id="filter-chips">
-            <button class="filter-chip active" data-status="">Todos</button>
-            <button class="filter-chip" data-status="Pendiente de firma">Pendientes</button>
-            <button class="filter-chip" data-status="Completado">Completados</button>
+
+          <!-- Toolbar: Search + Filters -->
+          <div class="admin-controls-bar">
+            <div class="admin-search-bar">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+              <input type="text" id="filter-search" placeholder="Buscar por colaborador, cédula, puesto o acción..." autocomplete="off" />
+            </div>
+            <div class="admin-filter-row" id="filter-chips">
+              <button class="filter-chip active" data-status="">Todos <span class="chip-badge" id="chip-count-all">0</span></button>
+              <button class="filter-chip" data-status="Pendiente de firma">Pendientes <span class="chip-badge" id="chip-count-pending">0</span></button>
+              <button class="filter-chip" data-status="Completado">Aprobadas <span class="chip-badge" id="chip-count-done">0</span></button>
+            </div>
           </div>
-          <div class="section-header" style="display: flex; align-items: center; width: 100%;">
-            <span class="section-title">Formularios</span>
+
+          <div class="section-header" style="display: flex; align-items: center; width: 100%; gap: 8px;">
+            <span class="section-title">Expedientes Registrados</span>
             <span class="section-count" id="form-count">0</span>
             <button id="btn-delete-all-forms" style="display: none; margin-left: auto; background: none; border: 1px solid var(--danger-soft); color: var(--danger); padding: 6px 12px; border-radius: 8px; font-size: 0.75rem; font-weight: 600; cursor: pointer; transition: all 0.2s;">Eliminar Todos</button>
           </div>
-          <div id="formularios-cards"></div>
+          <div id="formularios-cards" class="formularios-grid"></div>
         </div>
 
         <!-- VIEW: Usuarios -->
@@ -553,6 +596,6 @@
     </div>
   </div>
 
-  <script src="./main.js?v=20261016-2"></script>
+  <script src="./main.js?v=20261016-3"></script>
 </body>
 </html>
