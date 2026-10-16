@@ -1515,22 +1515,18 @@ function initApp() {
         datos_completos: dc
       };
 
-      // Intentar UPDATE normal primero; si RLS bloquea UPDATE (0 filas devueltas), reemplazar registro conservando ID
       const { data: updatedRows, error: updErr } = await supabaseClient
         .from('formularios')
         .update(updatePayload)
         .eq('id', currentAdminData.id)
         .select();
 
-      if (updErr || !updatedRows || updatedRows.length === 0) {
-        const replacementRow = {
-          ...currentAdminData,
-          ...updatePayload
-        };
-        const { error: delErr } = await supabaseClient.from('formularios').delete().eq('id', currentAdminData.id);
-        if (delErr) throw delErr;
-        const { error: insErr } = await supabaseClient.from('formularios').insert([replacementRow]);
-        if (insErr) throw insErr;
+      if (updErr) {
+        throw updErr;
+      }
+
+      if (!updatedRows || updatedRows.length === 0) {
+        throw new Error('Supabase no permitió actualizar el registro (0 filas modificadas). La tabla "formularios" tiene bloqueado el permiso UPDATE por políticas RLS. Ejecute el script "supabase_fix_permissions.sql" en el SQL Editor de Supabase para habilitar UPDATE.');
       }
 
       alert("Guardado correctamente.");
