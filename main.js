@@ -529,10 +529,25 @@ function initApp() {
     if (!mobilePad || mobilePad.isEmpty()) { alert('Por favor, firme o suba una imagen.'); return; }
     try {
       const dataUrl = mobilePad.toDataURL('image/png');
-      if (padEmpleado) {
+      if (padEmpleado && canvasEmpleado) {
+        // Asegurar dimensiones reales del canvas de empleado (aunque preview esté oculto)
         const ratio = Math.max(window.devicePixelRatio || 1, 1);
+        const parent = canvasEmpleado.parentElement;
+        const w = (parent && parent.offsetWidth > 20) ? parent.offsetWidth : 340;
+        const h = (parent && parent.offsetHeight > 20) ? parent.offsetHeight : 100;
+        canvasEmpleado.width = Math.floor(w * ratio);
+        canvasEmpleado.height = Math.floor(h * ratio);
+        const ctx = canvasEmpleado.getContext('2d');
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
         padEmpleado.clear();
-        padEmpleado.fromDataURL(dataUrl, { ratio });
+        const img = new Image();
+        img.onload = () => {
+          drawImageFitted(canvasEmpleado, img);
+          closeMobileSign();
+          setTimeout(() => mobileSharePdfFlow(), 30);
+        };
+        img.src = dataUrl;
+        return;
       }
     } catch(e) { console.warn('No se pudo aplicar la firma móvil:', e); }
     closeMobileSign();
@@ -608,21 +623,68 @@ function initApp() {
     if (!canvas) return;
     const ratio = Math.max(window.devicePixelRatio || 1, 1);
     const parent = canvas.parentElement;
-    canvas.width = parent.offsetWidth * ratio;
-    canvas.height = parent.offsetHeight * ratio;
-    canvas.getContext("2d").scale(ratio, ratio);
+    const w = (parent && parent.offsetWidth > 20) ? parent.offsetWidth : 340;
+    const h = (parent && parent.offsetHeight > 20) ? parent.offsetHeight : 100;
+    canvas.width = Math.floor(w * ratio);
+    canvas.height = Math.floor(h * ratio);
+    const ctx = canvas.getContext("2d");
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.scale(ratio, ratio);
+  }
+
+  // Recorta los espacios vacíos transparentes alrededor de una imagen de firma
+  function getSignatureBoundingBox(img) {
+    const tempCanvas = document.createElement('canvas');
+    const w = img.naturalWidth || img.width;
+    const h = img.naturalHeight || img.height;
+    if (!w || !h) return null;
+    tempCanvas.width = w;
+    tempCanvas.height = h;
+    const tCtx = tempCanvas.getContext('2d');
+    tCtx.drawImage(img, 0, 0, w, h);
+    const data = tCtx.getImageData(0, 0, w, h).data;
+    let minX = w, minY = h, maxX = 0, maxY = 0, found = false;
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        const i = (y * w + x) * 4;
+        const alpha = data[i + 3];
+        const lum = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+        // Considerar píxel de tinta si tiene opacidad significativa y no es blanco puro
+        if (alpha > 25 && lum < 245) {
+          if (x < minX) minX = x;
+          if (x > maxX) maxX = x;
+          if (y < minY) minY = y;
+          if (y > maxY) maxY = y;
+          found = true;
+        }
+      }
+    }
+    if (!found) return { sx: 0, sy: 0, sw: w, sh: h };
+    const padX = Math.max(4, Math.floor((maxX - minX) * 0.04));
+    const padY = Math.max(4, Math.floor((maxY - minY) * 0.04));
+    const sx = Math.max(0, minX - padX);
+    const sy = Math.max(0, minY - padY);
+    const sw = Math.min(w - sx, (maxX - minX + 1) + padX * 2);
+    const sh = Math.min(h - sy, (maxY - minY + 1) + padY * 2);
+    return { sx, sy, sw, sh };
   }
 
   function drawImageFitted(canvas, img) {
     if (!canvas || !img) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     const w = canvas.width, h = canvas.height;
-    const scale = Math.min(w / img.width, h / img.height);
-    const dw = img.width * scale, dh = img.height * scale;
+    const bbox = getSignatureBoundingBox(img) || { sx: 0, sy: 0, sw: img.width, sh: img.height };
+    const scale = Math.min((w * 0.88) / bbox.sw, (h * 0.84) / bbox.sh);
+    const dw = bbox.sw * scale, dh = bbox.sh * scale;
     const dx = (w - dw) / 2, dy = (h - dh) / 2;
-    ctx.drawImage(img, dx, dy, dw, dh);
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(img, bbox.sx, bbox.sy, bbox.sw, bbox.sh, dx, dy, dw, dh);
+    ctx.restore();
   }
 
   document.querySelectorAll('.clear-btn').forEach(btn => {
@@ -675,6 +737,7 @@ function initApp() {
           else alphaMap[px] = Math.floor(255 - ((lum - blackPoint) / (whitePoint - blackPoint)) * 255);
         }
         const dilated = new Uint8Array(w * h);
+        let minX = w, minY = h, maxX = 0, maxY = 0, hasInk = false;
         for (let y = 0; y < h; y++) {
           for (let x = 0; x < w; x++) {
             let maxAlpha = alphaMap[y * w + x];
@@ -688,6 +751,13 @@ function initApp() {
               }
             }
             dilated[y * w + x] = maxAlpha;
+            if (maxAlpha > 35) {
+              if (x < minX) minX = x;
+              if (x > maxX) maxX = x;
+              if (y < minY) minY = y;
+              if (y > maxY) maxY = y;
+              hasInk = true;
+            }
           }
         }
         for (let i = 0; i < data.length; i += 4) {
@@ -700,20 +770,37 @@ function initApp() {
           }
         }
         hCtx.putImageData(imgData, 0, 0);
+
+        // Recortar al área exacta donde está la firma (bounding box de los trazos)
+        const cropX = hasInk ? Math.max(0, minX - 8) : 0;
+        const cropY = hasInk ? Math.max(0, minY - 8) : 0;
+        const cropW = hasInk ? Math.min(w - cropX, (maxX - minX + 1) + 16) : w;
+        const cropH = hasInk ? Math.min(h - cropY, (maxY - minY + 1) + 16) : h;
+
         const padCanvas = pad.canvas;
+        if (padCanvas.width < 50 || padCanvas.height < 20) {
+          resizeCanvas(padCanvas);
+        }
         const targetWidth = padCanvas.width, targetHeight = padCanvas.height;
         const finalCanvas = document.createElement('canvas');
         finalCanvas.width = targetWidth; finalCanvas.height = targetHeight;
         const fCtx = finalCanvas.getContext('2d');
         fCtx.clearRect(0, 0, targetWidth, targetHeight);
-        const scale = Math.min(targetWidth / w, targetHeight / h) * 0.90;
-        const finalW = w * scale, finalH = h * scale;
+        const scale = Math.min((targetWidth * 0.88) / cropW, (targetHeight * 0.84) / cropH);
+        const finalW = cropW * scale, finalH = cropH * scale;
         const xOff = (targetWidth - finalW) / 2, yOff = (targetHeight - finalH) / 2;
         fCtx.imageSmoothingEnabled = true; fCtx.imageSmoothingQuality = 'high';
-        fCtx.drawImage(highResCanvas, xOff, yOff, finalW, finalH);
+        fCtx.drawImage(highResCanvas, cropX, cropY, cropW, cropH, xOff, yOff, finalW, finalH);
+
+        // Dibujar directamente en el canvas ignorando el doble escalado de devicePixelRatio
         pad.clear();
-        const ratio = Math.max(window.devicePixelRatio || 1, 1);
-        pad.fromDataURL(finalCanvas.toDataURL('image/png'), { ratio: ratio });
+        const padCtx = padCanvas.getContext('2d');
+        padCtx.save();
+        padCtx.setTransform(1, 0, 0, 1, 0, 0);
+        padCtx.clearRect(0, 0, targetWidth, targetHeight);
+        padCtx.drawImage(finalCanvas, 0, 0);
+        padCtx.restore();
+        pad._isEmpty = false;
       };
       img.src = event.target.result;
     };
