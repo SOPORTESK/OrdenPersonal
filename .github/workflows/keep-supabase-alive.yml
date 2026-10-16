@@ -1,0 +1,30 @@
+name: Keep Supabase Alive (Accion Personal)
+
+on:
+  schedule:
+    # Se ejecuta todos los días a las 08:00 AM y 08:00 PM UTC (2:00 AM y 2:00 PM Costa Rica)
+    - cron: '0 8,20 * * *'
+  workflow_dispatch: # Permite ejecutarlo manualmente desde la pestaña Actions en GitHub
+
+jobs:
+  ping-supabase:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase DB (Accion Personal - rjubbjhilulctbqsjxuv)
+        run: |
+          echo "Realizando consulta a la base de datos de Acción Personal para evitar pausa por inactividad..."
+          HTTP_STATUS=$(curl -s -o response.json -w "%{http_code}" \
+            "https://rjubbjhilulctbqsjxuv.supabase.co/rest/v1/opciones_personalizadas?select=select_id&limit=1" \
+            -H "apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJqdWJiamhpbHVsY3RicXNqeHV2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAzMjQ3ODQsImV4cCI6MjA5NTkwMDc4NH0.h7QSxgylv4Hzwg8uho5qsWtzJ8IrZTNjUSixBavL9hQ" \
+            -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJqdWJiamhpbHVsY3RicXNqeHV2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAzMjQ3ODQsImV4cCI6MjA5NTkwMDc4NH0.h7QSxgylv4Hzwg8uho5qsWtzJ8IrZTNjUSixBavL9hQ")
+          
+          cat response.json
+          echo ""
+          echo "HTTP Status: $HTTP_STATUS"
+          
+          if [ "$HTTP_STATUS" -ge 200 ] && [ "$HTTP_STATUS" -lt 300 ]; then
+            echo "Ping exitoso: la base de datos se mantiene activa."
+          else
+            echo "Error al contactar Supabase: HTTP $HTTP_STATUS"
+            exit 1
+          fi
