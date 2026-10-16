@@ -55,11 +55,26 @@ try {
 
 function initApp() {
   // ==========================================
-  // PANEL DE ADMINISTRADOR OCULTO
+  // ACCESO AL PANEL DE ADMINISTRACIÓN
   // ==========================================
   const wizardLogo = document.querySelector('.wizard-header img');
+  const btnOpenAdminQuick = document.getElementById('btn-open-admin-quick');
   let clickCount = 0;
   let clickTimer;
+
+  function openAdminLoginOrDashboard() {
+    if (window.currentUserData && window.currentUserData.email) {
+      document.getElementById('admin-dashboard-modal')?.classList.add('active');
+      document.getElementById('admin-tab-bar')?.classList.add('visible');
+      loadDashboardData();
+    } else {
+      document.getElementById('admin-login-modal')?.classList.add('active');
+    }
+  }
+
+  if (btnOpenAdminQuick) {
+    btnOpenAdminQuick.addEventListener('click', openAdminLoginOrDashboard);
+  }
 
   if (wizardLogo) {
     wizardLogo.style.cursor = 'pointer';
@@ -67,14 +82,13 @@ function initApp() {
       clickCount++;
       clearTimeout(clickTimer);
       if (clickCount >= 5) {
-        document.getElementById('admin-login-modal').classList.add('active');
+        openAdminLoginOrDashboard();
         clickCount = 0;
       }
       clickTimer = setTimeout(() => {
         clickCount = 0;
       }, 2000);
     });
-
   }
 
   // Generador y copiar contraseña
@@ -233,8 +247,9 @@ function initApp() {
   }
   syncCustomOptionsFromCloud();
 
-  // Wizard Navigation
+  // Wizard Navigation & Validation
   const steps = document.querySelectorAll('.step');
+  const stepPills = document.querySelectorAll('.wizard-step-pill');
   const btnPrev = document.getElementById('btn-prev');
   const btnNext = document.getElementById('btn-next');
   const btnPreview = document.getElementById('btn-preview');
@@ -246,22 +261,71 @@ function initApp() {
   
   let currentStep = 0;
 
+  // Limpiar estado de error al escribir/cambiar un campo
+  document.querySelectorAll('#wizard-container input, #wizard-container select').forEach(el => {
+    const clearInvalid = () => el.classList.remove('input-invalid');
+    el.addEventListener('input', clearInvalid);
+    el.addEventListener('change', clearInvalid);
+  });
+
+  function validateStep(stepIdx) {
+    if (stepIdx === 0) {
+      const emp = document.getElementById('empresa');
+      const ced = document.getElementById('cedula');
+      const nom = document.getElementById('nombre');
+      let valid = true;
+      if (!emp.value || emp.value === 'add') { emp.classList.add('input-invalid'); valid = false; }
+      if (!ced.value.trim()) { ced.classList.add('input-invalid'); valid = false; }
+      if (!nom.value.trim()) { nom.classList.add('input-invalid'); valid = false; }
+      if (!valid) {
+        alert('Por favor complete Compañía, Cédula y Nombre del colaborador antes de continuar.');
+      }
+      return valid;
+    }
+    if (stepIdx === 1) {
+      const acc = document.getElementById('tipo_accion');
+      if (!acc.value) {
+        acc.classList.add('input-invalid');
+        alert('Por favor seleccione el Tipo de Acción a tramitar.');
+        return false;
+      }
+      return true;
+    }
+    if (stepIdx === 2) {
+      const rige = document.getElementById('rige_desde');
+      if (!rige.value) {
+        rige.classList.add('input-invalid');
+        alert('Por favor indique la fecha en que rige la acción (Rige desde).');
+        return false;
+      }
+      return true;
+    }
+    return true;
+  }
+
   function updateWizard() {
     steps.forEach((step, index) => {
       step.classList.toggle('active', index === currentStep);
     });
+    stepPills.forEach((pill, index) => {
+      pill.classList.toggle('active', index === currentStep);
+      pill.classList.toggle('completed', index < currentStep);
+      const badge = pill.querySelector('span');
+      if (badge) badge.textContent = index < currentStep ? '✓' : String(index + 1);
+    });
     if (btnPrev) btnPrev.disabled = currentStep === 0;
     if (currentStep === steps.length - 1) {
       if (btnNext) btnNext.style.display = 'none';
-      if (btnPreview) btnPreview.style.display = 'block';
+      if (btnPreview) btnPreview.style.display = 'inline-flex';
     } else {
-      if (btnNext) btnNext.style.display = 'block';
+      if (btnNext) btnNext.style.display = 'inline-flex';
       if (btnPreview) btnPreview.style.display = 'none';
     }
     if (progressFill) progressFill.style.width = `${((currentStep + 1) / steps.length) * 100}%`;
   }
 
   if (btnNext) btnNext.addEventListener('click', () => {
+    if (!validateStep(currentStep)) return;
     if (currentStep < steps.length - 1) {
       currentStep++;
       updateWizard();
@@ -275,24 +339,47 @@ function initApp() {
     }
   });
 
-  // Búsqueda Hacienda
+  // Búsqueda Hacienda con indicador visual y disparo inmediato al completar 9 dígitos
   const cedulaInput = document.getElementById('cedula');
   const nombreInput = document.getElementById('nombre');
-  if (cedulaInput) {
-    cedulaInput.addEventListener('blur', async () => {
-      const cedula = cedulaInput.value.replace(/[^0-9]/g, '');
-      if (cedula.length >= 9) {
-        try {
-          const response = await fetch(`https://api.hacienda.go.cr/fe/ae?identificacion=${cedula}`);
-          if (response.ok) {
-            const data = await response.json();
-            if (data.nombre && nombreInput) nombreInput.value = data.nombre;
+  const lookupBadge = document.getElementById('cedula-lookup-status');
+  let lastLookedUpCedula = '';
+
+  async function lookupCedulaHacienda(rawCedula) {
+    const cedula = rawCedula.replace(/[^0-9]/g, '');
+    if (cedula.length < 9 || cedula === lastLookedUpCedula) return;
+    lastLookedUpCedula = cedula;
+    if (lookupBadge) {
+      lookupBadge.textContent = 'Consultando padrón...';
+      lookupBadge.style.display = 'inline-block';
+    }
+    try {
+      const response = await fetch(`https://api.hacienda.go.cr/fe/ae?identificacion=${cedula}`);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.nombre && nombreInput) {
+          nombreInput.value = data.nombre.trim();
+          nombreInput.classList.remove('input-invalid');
+          if (lookupBadge) {
+            lookupBadge.textContent = '✓ Verificado';
+            setTimeout(() => { if (lookupBadge) lookupBadge.style.display = 'none'; }, 2500);
           }
-        } catch (error) {
-          console.error('Error Hacienda:', error);
+          return;
         }
       }
+      if (lookupBadge) lookupBadge.style.display = 'none';
+    } catch (error) {
+      console.error('Error Hacienda:', error);
+      if (lookupBadge) lookupBadge.style.display = 'none';
+    }
+  }
+
+  if (cedulaInput) {
+    cedulaInput.addEventListener('input', () => {
+      const digits = cedulaInput.value.replace(/[^0-9]/g, '');
+      if (digits.length === 9) lookupCedulaHacienda(digits);
     });
+    cedulaInput.addEventListener('blur', () => lookupCedulaHacienda(cedulaInput.value));
   }
 
   // Días Hábiles
@@ -364,8 +451,20 @@ function initApp() {
     } catch { return false; }
   }
 
+  function formatCurrencyValue(rawVal) {
+    if (!rawVal) return { mensual: '0,00', quincenal: '' };
+    const numeric = parseFloat(String(rawVal).replace(/[^0-9.]/g, ''));
+    if (isNaN(numeric) || numeric <= 0) return { mensual: String(rawVal), quincenal: '' };
+    const fmt = (n) => n.toLocaleString('es-CR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return {
+      mensual: fmt(numeric),
+      quincenal: fmt(numeric / 2)
+    };
+  }
+
   function populatePreviewFields() {
     const get = (id) => document.getElementById(id);
+    const sal = formatCurrencyValue(get('salario_mensual').value);
     get('doc-empresa').innerText = get('empresa').value;
     get('doc-cedula').innerText = get('cedula').value;
     get('doc-nombre').innerText = get('nombre').value;
@@ -375,11 +474,55 @@ function initApp() {
     get('doc-rige_desde').innerText = formatDateToSpanish(get('rige_desde').value);
     get('doc-hasta').innerText = formatDateToSpanish(get('hasta').value);
     get('doc-dias_habiles').innerText = get('dias_habiles').value;
-    get('doc-salario_mensual').innerText = get('salario_mensual').value;
+    get('doc-salario_mensual').innerText = sal.mensual;
+    get('doc-salario_quincenal').innerText = sal.quincenal;
     get('doc-observaciones').innerText = get('observaciones').value;
     get('doc-firma-nombre-empleado').innerText = get('nombre').value;
     get('doc-fecha_actual').innerText = formatDateToSpanish(new Date().toISOString().split('T')[0]);
     populateOptionsGrid();
+  }
+
+  // Control anti-duplicados: guarda una sola vez por sesión de formulario o actualiza si cambia la firma
+  let lastSavedSubmissionSignature = null;
+  async function saveEmployeeFormOnce() {
+    if (!supabaseClient) return;
+    const datosFormulario = {
+      empresa: document.getElementById('empresa').value,
+      cedula: document.getElementById('cedula').value.trim(),
+      nombre: document.getElementById('nombre').value.trim(),
+      centro_funcional: document.getElementById('centro_funcional').value,
+      codigo_puesto: document.getElementById('codigo_puesto').value,
+      nombre_puesto: document.getElementById('nombre_puesto').value,
+      tipo_accion: document.getElementById('tipo_accion').value,
+      fecha_rige: document.getElementById('rige_desde').value,
+      fecha_hasta: document.getElementById('hasta').value,
+      total_dias: document.getElementById('dias_habiles').value,
+      salario_mensual: document.getElementById('salario_mensual').value,
+      salario_quincenal: document.getElementById('doc-salario_quincenal')?.innerText || '',
+      observaciones: document.getElementById('observaciones').value,
+      fecha_actual: document.getElementById('doc-fecha_actual').innerText
+    };
+    const firmaEmpleado = document.getElementById('canvas-empleado').toDataURL();
+    const fingerprint = `${datosFormulario.cedula}|${datosFormulario.tipo_accion}|${datosFormulario.fecha_rige}|${datosFormulario.fecha_hasta}|${firmaEmpleado.length}`;
+    if (lastSavedSubmissionSignature === fingerprint) {
+      return; // Ya se guardó exactamente esta solicitud hace unos instantes
+    }
+    try {
+      await supabaseClient.from('formularios').insert([{
+        cedula: datosFormulario.cedula,
+        nombre: datosFormulario.nombre,
+        tipo_accion: datosFormulario.tipo_accion,
+        fecha_rige: datosFormulario.fecha_rige,
+        fecha_hasta: datosFormulario.fecha_hasta,
+        total_dias: datosFormulario.total_dias,
+        datos_completos: datosFormulario,
+        firma_empleado: firmaEmpleado,
+        estado: 'Pendiente de firma'
+      }]);
+      lastSavedSubmissionSignature = fingerprint;
+    } catch (e) {
+      console.error("Error inserting form:", e);
+    }
   }
 
   let isSubmittingForm = false;
@@ -420,45 +563,14 @@ function initApp() {
     if (docSheet) docSheet.style.transform = 'none';
     try {
       const pdfBlob = await html2pdf().set(opt).from(element).output('blob');
-      // Guardar registro (igual que en compartir normal)
-      if (supabaseClient) {
-        const datosFormulario = {
-          empresa: document.getElementById('empresa').value,
-          cedula: document.getElementById('cedula').value,
-          nombre: document.getElementById('nombre').value,
-          centro_funcional: document.getElementById('centro_funcional').value,
-          codigo_puesto: document.getElementById('codigo_puesto').value,
-          nombre_puesto: document.getElementById('nombre_puesto').value,
-          tipo_accion: document.getElementById('tipo_accion').value,
-          fecha_rige: document.getElementById('rige_desde').value,
-          fecha_hasta: document.getElementById('hasta').value,
-          total_dias: document.getElementById('dias_habiles').value,
-          salario_mensual: document.getElementById('salario_mensual').value,
-          observaciones: document.getElementById('observaciones').value,
-          fecha_actual: document.getElementById('doc-fecha_actual').innerText
-        };
-        const firmaEmpleado = document.getElementById('canvas-empleado').toDataURL();
-        try {
-          await supabaseClient.from('formularios').insert([{
-            cedula: datosFormulario.cedula, nombre: datosFormulario.nombre, tipo_accion: datosFormulario.tipo_accion,
-            fecha_rige: datosFormulario.fecha_rige, fecha_hasta: datosFormulario.fecha_hasta,
-            total_dias: datosFormulario.total_dias, datos_completos: datosFormulario,
-            firma_empleado: firmaEmpleado, estado: 'Pendiente de firma'
-          }]);
-        } catch (e) {
-          console.error("Error inserting form:", e);
-        }
-      }
-      // Opción C: en móvil, abrir el PDF en una nueva pestaña para visualizarlo primero
+      await saveEmployeeFormOnce();
       if (isMobileDevice()) {
         const url = URL.createObjectURL(pdfBlob);
         const w = window.open(url, '_blank');
         if (!w || w.closed) {
-          // Fallback si el navegador bloquea popups: forzar descarga
           const a = document.createElement('a'); a.href = url; a.download = opt.filename; document.body.appendChild(a); a.click(); document.body.removeChild(a);
         }
       } else {
-        // Desktop no llega aquí en flujo móvil, pero dejamos fallback estándar
         const url = URL.createObjectURL(pdfBlob);
         const a = document.createElement('a'); a.href = url; a.download = opt.filename; document.body.appendChild(a); a.click(); document.body.removeChild(a);
       }
@@ -557,13 +669,7 @@ function initApp() {
 
   if (btnPreview) {
     btnPreview.addEventListener('click', () => {
-      // Validar campos requeridos mínimos para evitar registros vacíos
-      const cedula = document.getElementById('cedula').value.trim();
-      const nombre = document.getElementById('nombre').value.trim();
-      if (!cedula || !nombre) {
-        alert('Por favor complete la Cédula y el Nombre completo antes de generar el documento.');
-        return;
-      }
+      if (!validateStep(0) || !validateStep(1) || !validateStep(2)) return;
 
       // Gate: en móvil, si no hay firma del empleado todavía, abrir captura full-screen primero
       if (isMobileDevice()) {
@@ -588,14 +694,32 @@ function initApp() {
     });
   }
 
+  // Ocultar temporalmente estilos de edición (fondo amarillo y borde punteado) al exportar PDF
+  function withCleanDocumentForPdf(fn) {
+    const editableEls = document.querySelectorAll('#document-to-pdf [contenteditable="true"]');
+    const savedStyles = [];
+    editableEls.forEach(el => {
+      savedStyles.push({ el, bg: el.style.backgroundColor, border: el.style.border });
+      el.style.backgroundColor = 'transparent';
+      el.style.border = 'none';
+    });
+    return Promise.resolve(fn()).finally(() => {
+      savedStyles.forEach(s => {
+        s.el.style.backgroundColor = s.bg;
+        s.el.style.border = s.border;
+      });
+    });
+  }
+
   // Descargar PDF directo en Admin
   const btnAdminDownload = document.getElementById('btn-admin-download');
   if (btnAdminDownload) {
     btnAdminDownload.addEventListener('click', async () => {
       document.querySelectorAll('.sign-controls').forEach(el => el.style.display = 'none');
+      const cedulaText = document.getElementById('doc-cedula')?.innerText || document.getElementById('cedula').value || 'Documento';
       const element = document.getElementById('document-to-pdf');
       const opt = {
-        margin: 0, filename: `Accion_Personal_${document.getElementById('cedula').value}.pdf`,
+        margin: 0, filename: `Accion_Personal_${cedulaText}.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
         html2canvas: { scale: 2, useCORS: true, windowWidth: 1122, width: 1122 },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
@@ -606,13 +730,15 @@ function initApp() {
       if (wrapper) wrapper.style.overflowX = 'visible'; 
       if (docSheet) docSheet.style.transform = 'none';
       try {
-        await html2pdf().set(opt).from(element).save();
+        await withCleanDocumentForPdf(() => html2pdf().set(opt).from(element).save());
       } catch (err) {
         console.error(err); alert('Error al descargar el PDF.');
       } finally {
         if (wrapper) wrapper.style.overflowX = originalOverflow; 
         if (docSheet) docSheet.style.transform = originalTransform;
-        document.querySelectorAll('.sign-controls').forEach(el => el.style.display = 'flex');
+        const controls = document.querySelectorAll('.sign-controls');
+        if (controls && controls[1]) controls[1].style.display = 'flex';
+        if (controls && controls[2]) controls[2].style.display = 'flex';
       }
     });
   }
@@ -817,7 +943,11 @@ function initApp() {
   const btnViewPdf = document.getElementById('btn-view-pdf');
   if (btnViewPdf) {
     btnViewPdf.addEventListener('click', async () => {
-      btnViewPdf.textContent = "Cargando..."; btnViewPdf.disabled = true;
+      if (isCanvasBlank(canvasEmpleado)) {
+        const proceed = confirm('Aún no ha firmado en el recuadro de "Firma del Empleado". ¿Desea generar el documento de todos modos?');
+        if (!proceed) return;
+      }
+      btnViewPdf.textContent = "Generando..."; btnViewPdf.disabled = true;
       document.querySelectorAll('.sign-controls').forEach(el => el.style.display = 'none');
       const element = document.getElementById('document-to-pdf');
       const opt = {
@@ -832,22 +962,27 @@ function initApp() {
       if (wrapper) wrapper.style.overflowX = 'visible'; 
       if (docSheet) docSheet.style.transform = 'none';
       try {
-        const pdfBlob = await html2pdf().set(opt).from(element).output('blob');
+        const pdfBlob = await withCleanDocumentForPdf(() => html2pdf().set(opt).from(element).output('blob'));
+        await saveEmployeeFormOnce();
         const url = URL.createObjectURL(pdfBlob);
-        const a = document.createElement('a'); a.href = url; a.target = '_blank'; a.click();
+        const a = document.createElement('a'); a.href = url; a.download = opt.filename; document.body.appendChild(a); a.click(); document.body.removeChild(a);
       } catch (err) {
-        console.error(err); alert("Error al previsualizar el PDF.");
+        console.error(err); alert("Error al descargar el PDF.");
       } finally {
         if (wrapper) wrapper.style.overflowX = originalOverflow; 
         if (docSheet) docSheet.style.transform = originalTransform;
         document.querySelectorAll('.sign-controls').forEach(el => el.style.display = 'flex');
-        btnViewPdf.textContent = "📄 Ver PDF"; btnViewPdf.disabled = false;
+        btnViewPdf.textContent = "📥 Descargar PDF"; btnViewPdf.disabled = false;
       }
     });
   }
 
   if (btnShare) {
     btnShare.addEventListener('click', async () => {
+      if (isCanvasBlank(canvasEmpleado)) {
+        const proceed = confirm('Aún no ha firmado en el recuadro de "Firma del Empleado". ¿Desea generar el documento de todos modos?');
+        if (!proceed) return;
+      }
       document.querySelectorAll('.sign-controls').forEach(el => el.style.display = 'none');
       const element = document.getElementById('document-to-pdf');
       btnShare.textContent = "Generando..."; btnShare.disabled = true;
@@ -863,31 +998,8 @@ function initApp() {
       if (wrapper) wrapper.style.overflowX = 'visible'; 
       if (docSheet) docSheet.style.transform = 'none';
       try {
-        const pdfBlob = await html2pdf().set(opt).from(element).output('blob');
-        if (supabaseClient) {
-          const datosFormulario = {
-            empresa: document.getElementById('empresa').value,
-            cedula: document.getElementById('cedula').value,
-            nombre: document.getElementById('nombre').value,
-            centro_funcional: document.getElementById('centro_funcional').value,
-            codigo_puesto: document.getElementById('codigo_puesto').value,
-            nombre_puesto: document.getElementById('nombre_puesto').value,
-            tipo_accion: document.getElementById('tipo_accion').value,
-            fecha_rige: document.getElementById('rige_desde').value,
-            fecha_hasta: document.getElementById('hasta').value,
-            total_dias: document.getElementById('dias_habiles').value,
-            salario_mensual: document.getElementById('salario_mensual').value,
-            observaciones: document.getElementById('observaciones').value,
-            fecha_actual: document.getElementById('doc-fecha_actual').innerText
-          };
-          const firmaEmpleado = document.getElementById('canvas-empleado').toDataURL();
-          await supabaseClient.from('formularios').insert([{
-            cedula: datosFormulario.cedula, nombre: datosFormulario.nombre, tipo_accion: datosFormulario.tipo_accion,
-            fecha_rige: datosFormulario.fecha_rige, fecha_hasta: datosFormulario.fecha_hasta,
-            total_dias: datosFormulario.total_dias, datos_completos: datosFormulario,
-            firma_empleado: firmaEmpleado, estado: 'Pendiente de firma'
-          }]);
-        }
+        const pdfBlob = await withCleanDocumentForPdf(() => html2pdf().set(opt).from(element).output('blob'));
+        await saveEmployeeFormOnce();
         const file = new File([pdfBlob], opt.filename, { type: 'application/pdf' });
         if (navigator.canShare && navigator.canShare({ files: [file] })) {
           await navigator.share({ files: [file], title: 'Acción de Personal', text: `Adjunto Acción de Personal de ${document.getElementById('nombre').value}` });
@@ -1763,7 +1875,7 @@ function initApp() {
   };
 
   if (wizardContainer) wizardContainer.classList.add('active'); 
-  loadDashboardData();
+  // Cargar datos del dashboard sólo bajo demanda (login o apertura de pestaña)
   // Registrar SW solo en producción (evitar caché en localhost)
   if ('serviceWorker' in navigator && location.hostname !== 'localhost' && location.protocol === 'https:') {
     navigator.serviceWorker.register('./service-worker.js').catch(err => console.error('SW error', err));

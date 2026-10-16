@@ -164,7 +164,7 @@ body::before {
 
 /* --- Wizard Header --- */
 .wizard-header {
-  padding: calc(20px + var(--safe-top)) 20px 20px;
+  padding: calc(20px + var(--safe-top)) 20px 18px;
   text-align: center;
   background: linear-gradient(180deg, rgba(99, 102, 241, 0.06) 0%, transparent 100%);
   position: sticky;
@@ -174,27 +174,149 @@ body::before {
   backdrop-filter: saturate(180%) blur(20px);
 }
 
+.wizard-top-actions {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.header-icon-btn {
+  background: var(--surface-raised);
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  height: 38px;
+  padding: 0 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+  color: var(--text-primary);
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-family: inherit;
+  transition: all var(--duration-normal);
+  box-shadow: var(--shadow-sm);
+}
+
+.header-icon-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+#theme-toggle.header-icon-btn {
+  width: 38px;
+  padding: 0;
+}
+
 .wizard-header img {
-  height: 120px;
+  height: 112px;
   width: 100%;
   margin-bottom: 4px;
   object-fit: contain;
   filter: drop-shadow(0 4px 20px rgba(99, 102, 241, 0.15));
-  transform: scale(1.1);
+  transform: scale(1.06);
   transform-origin: center;
   cursor: pointer;
 }
 
 .wizard-header h1 {
-  font-size: 1.5rem;
+  font-size: 1.45rem;
   font-weight: 800;
   margin-top: -4px;
   background: linear-gradient(135deg, var(--accent-light), #c084fc);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
   letter-spacing: -0.03em;
+}
+
+/* --- Wizard Stepper Pills --- */
+.wizard-stepper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.wizard-step-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  transition: all 0.25s;
+}
+
+.wizard-step-pill span {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--border-strong);
+  color: var(--text-secondary);
+  font-size: 0.65rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.wizard-step-pill.active {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.wizard-step-pill.active span {
+  background: var(--accent);
+  color: #fff;
+}
+
+.wizard-step-pill.completed {
+  color: var(--success);
+  border-color: rgba(16, 185, 129, 0.3);
+  background: var(--success-soft);
+}
+
+.wizard-step-pill.completed span {
+  background: var(--success);
+  color: #fff;
+}
+
+.wizard-step-line {
+  width: 14px;
+  height: 1.5px;
+  background: var(--border-strong);
+}
+
+.req-star {
+  color: var(--danger);
+  margin-left: 2px;
+}
+
+.lookup-badge {
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.input-invalid {
+  border-color: var(--danger) !important;
+  box-shadow: 0 0 0 3px var(--danger-soft) !important;
 }
 
 /* --- Progress Bar --- */
@@ -328,7 +450,7 @@ textarea {
   padding: 16px 20px calc(16px + var(--safe-bottom));
   display: flex;
   justify-content: space-between;
-  background: rgba(10, 10, 15, 0.85);
+  background: var(--surface-overlay);
   -webkit-backdrop-filter: saturate(180%) blur(20px);
   backdrop-filter: saturate(180%) blur(20px);
   border-top: 1px solid var(--border);
@@ -417,7 +539,7 @@ textarea {
 
 .preview-actions {
   width: 100%;
-  max-width: 800px;
+  max-width: 1122px;
   padding: 12px 16px;
   display: flex;
   justify-content: space-between;
@@ -445,7 +567,7 @@ textarea {
   height: 790px;
   box-sizing: border-box;
   padding: 20px 35px;
-  box-shadow: 0 8px 40px rgba(0,0,0,0.5);
+  box-shadow: 0 8px 40px rgba(0,0,0,0.22);
   font-family: 'Inter', Arial, Helvetica, sans-serif;
   color: #1f2937;
   position: relative;
@@ -461,7 +583,7 @@ textarea {
   .document-sheet {
     transform-origin: top left;
     transform: scale(calc(100vw / 1122));
-    margin-bottom: -calc(794px * (1 - (100vw / 1122)));
+    margin-bottom: calc(-794px * (1 - (100vw / 1122)));
   }
 }
 

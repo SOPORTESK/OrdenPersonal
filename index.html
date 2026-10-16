@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   
   <!-- PWA / App Móvil Meta Tags -->
   <meta name="theme-color" content="#0a0a0f" />
@@ -10,52 +10,41 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="Acciones RH" />
-  <link rel="manifest" href="./manifest.json?v=20260603-1415" />
-  <link rel="apple-touch-icon" href="./icon-app-512.png?v=20260603-1415" />
-  <link rel="icon" href="./icon-app-512.png?v=20260603-1415" />
+  <link rel="manifest" href="./manifest.json?v=20261016-4" />
+  <link rel="apple-touch-icon" href="./icon-app-512.png?v=20261016-4" />
+  <link rel="icon" href="./icon-app-512.png?v=20261016-4" />
   
   <title>Acción de Personal</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./style.css?v=20260604-1608" />
+  <link rel="stylesheet" href="./style.css?v=20261016-4" />
 </head>
 <body>
   
   <!-- WIZARD UI -->
   <main id="wizard-container" class="active">
-    <!-- Wizard remains hidden; will be shown when creating a new form -->
     <header class="wizard-header">
-      <div style="position: absolute; top: 16px; right: 16px; z-index: 20;">
-        <button id="theme-toggle" style="background: var(--surface-raised); border: 1px solid var(--border); border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-primary); transition: all var(--duration-normal);">
-          <svg id="theme-icon-light" style="display: none;" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
-          <svg id="theme-icon-dark" style="display: block;" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>
+      <div class="wizard-top-actions">
+        <button id="btn-open-admin-quick" class="header-icon-btn" title="Acceso Jefatura / RRHH" aria-label="Acceso Administración">
+          <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+          <span class="header-btn-label">Admin</span>
+        </button>
+        <button id="theme-toggle" class="header-icon-btn" title="Cambiar tema" aria-label="Cambiar tema">
+          <svg id="theme-icon-light" style="display: none;" xmlns="http://www.w3.org/2000/svg" width="19" height="19" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+          <svg id="theme-icon-dark" style="display: block;" xmlns="http://www.w3.org/2000/svg" width="19" height="19" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>
         </button>
       </div>
       <img src="./logoTiendaHD.png?v=20260603-1415" alt="Logo Premium" class="logo-preview" id="app-logo" />
       <h1>Acción de Personal</h1>
+      <div class="wizard-stepper" id="wizard-stepper">
+        <div class="wizard-step-pill active" data-step="0"><span>1</span> Colaborador</div>
+        <div class="wizard-step-line"></div>
+        <div class="wizard-step-pill" data-step="1"><span>2</span> Acción</div>
+        <div class="wizard-step-line"></div>
+        <div class="wizard-step-pill" data-step="2"><span>3</span> Fechas</div>
+      </div>
       <div class="progress-bar">
         <div class="progress-fill" id="progress-fill"></div>
       </div>
-
-  <!-- MOBILE SIGNATURE CAPTURE (FULLSCREEN) -->
-  <div id="mobile-sign-modal" class="modal-overlay" style="z-index:10000;">
-    <div class="modal-content glass-panel" style="width: 100%; height: 100vh; max-width:100%; max-height:100vh; border-radius:0; padding: 12px; display:flex; flex-direction:column; gap: 12px;">
-      <div style="display:flex; justify-content:space-between; align-items:center;">
-        <h3 style="margin:0; color: var(--primary-dark);">Firma del Empleado</h3>
-        <button id="btn-mobile-cancel" class="btn btn-secondary">Cerrar</button>
-      </div>
-      <div style="flex:1; background:#fff; border:1px dashed #cbd5e1; border-radius:8px; position:relative;">
-        <canvas id="mobile-sign-canvas" style="position:absolute; inset:0; width:100%; height:100%; touch-action:none;"></canvas>
-      </div>
-      <div style="display:flex; gap:8px; flex-wrap:wrap;">
-        <button id="btn-mobile-photo" class="btn btn-primary">Tomar foto</button>
-        <button id="btn-mobile-upload" class="btn btn-secondary">Subir imagen</button>
-        <button id="btn-mobile-clear" class="btn btn-secondary">Borrar</button>
-        <button id="btn-mobile-done" class="btn btn-success" style="margin-left:auto;">Listo</button>
-      </div>
-      <input type="file" id="mobile-file-camera" accept="image/*" capture="environment" style="display:none;" />
-      <input type="file" id="mobile-file-upload" accept="image/*" style="display:none;" />
-    </div>
-  </div>
     </header>
 
     <div class="steps-container">
@@ -64,7 +53,7 @@
       <section class="step active" id="step-1">
         <h2>Datos del Colaborador</h2>
         <div class="form-group">
-          <label for="empresa">Compañía</label>
+          <label for="empresa">Compañía <span class="req-star">*</span></label>
           <select id="empresa">
             <option value="">Seleccionar...</option>
             <option value="SEKUNET">SEKUNET</option>
@@ -73,12 +62,15 @@
           </select>
         </div>
         <div class="form-group">
-          <label for="cedula">Cédula</label>
-          <input type="text" id="cedula" />
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <label for="cedula" style="margin-bottom: 6px;">Cédula de Identidad <span class="req-star">*</span></label>
+            <span id="cedula-lookup-status" class="lookup-badge" style="display: none;">Consultando...</span>
+          </div>
+          <input type="text" id="cedula" placeholder="Ej. 102340567" inputmode="numeric" />
         </div>
         <div class="form-group">
-          <label for="nombre">Nombre</label>
-          <input type="text" id="nombre" />
+          <label for="nombre">Nombre Completo <span class="req-star">*</span></label>
+          <input type="text" id="nombre" placeholder="Se autocompleta con la cédula o escriba aquí" />
         </div>
         <div class="form-group">
           <label for="centro_funcional">Centro Funcional</label>
@@ -107,7 +99,7 @@
       <section class="step" id="step-2">
         <h2>Tipo de Acción</h2>
         <div class="form-group">
-          <label for="tipo_accion">Seleccione la acción</label>
+          <label for="tipo_accion">Seleccione la acción a tramitar <span class="req-star">*</span></label>
           <select id="tipo_accion">
             <option value="">Seleccionar...</option>
             <option value="ASCENSO">Ascenso</option>
@@ -138,7 +130,7 @@
         <h2>Fechas y Detalles</h2>
         <div class="form-row">
           <div class="form-group">
-            <label for="rige_desde">Rige desde</label>
+            <label for="rige_desde">Rige desde <span class="req-star">*</span></label>
             <input type="date" id="rige_desde" />
           </div>
           <div class="form-group">
@@ -148,15 +140,15 @@
         </div>
         <div class="form-group">
           <label for="dias_habiles">Total días Hábiles</label>
-          <input type="number" id="dias_habiles" readonly />
+          <input type="number" id="dias_habiles" readonly placeholder="Se calcula automáticamente" />
         </div>
         <div class="form-group">
-          <label for="salario_mensual">Salario Mensual</label>
-          <input type="text" id="salario_mensual" />
+          <label for="salario_mensual">Salario Mensual (Opcional)</label>
+          <input type="text" id="salario_mensual" placeholder="Ej. 600000" inputmode="numeric" />
         </div>
         <div class="form-group">
-          <label for="observaciones">Observaciones</label>
-          <textarea id="observaciones" rows="4"></textarea>
+          <label for="observaciones">Observaciones / Motivo</label>
+          <textarea id="observaciones" rows="4" placeholder="Detalle adicional de la solicitud..."></textarea>
         </div>
       </section>
       
@@ -164,10 +156,31 @@
 
     <div class="wizard-footer">
       <button id="btn-prev" class="btn btn-secondary" disabled>Anterior</button>
-      <button id="btn-next" class="btn btn-primary">Siguiente</button>
-      <button id="btn-preview" class="btn btn-primary" style="display: none;">🔍 Vista Previa</button>
+      <button id="btn-next" class="btn btn-primary">Siguiente →</button>
+      <button id="btn-preview" class="btn btn-primary" style="display: none;">🔍 Vista Previa y Firma</button>
     </div>
   </main>
+
+  <!-- MOBILE SIGNATURE CAPTURE (FULLSCREEN - OUTSIDE HEADER) -->
+  <div id="mobile-sign-modal" class="modal-overlay" style="z-index:10000;">
+    <div class="modal-content glass-panel" style="width: 100%; height: 100dvh; max-width:100%; max-height:100dvh; border-radius:0; padding: 16px; display:flex; flex-direction:column; gap: 12px;">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h3 style="margin:0; color: var(--text-primary); font-size: 1.1rem;">Firma del Colaborador</h3>
+        <button id="btn-mobile-cancel" class="btn btn-secondary" style="padding: 8px 14px;">Cerrar</button>
+      </div>
+      <div style="flex:1; background:#fff; border:2px dashed #cbd5e1; border-radius:12px; position:relative; overflow:hidden;">
+        <canvas id="mobile-sign-canvas" style="position:absolute; inset:0; width:100%; height:100%; touch-action:none;"></canvas>
+      </div>
+      <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        <button id="btn-mobile-photo" class="btn btn-primary" style="padding: 10px 14px;">📷 Foto</button>
+        <button id="btn-mobile-upload" class="btn btn-secondary" style="padding: 10px 14px;">📁 Imagen</button>
+        <button id="btn-mobile-clear" class="btn btn-secondary" style="padding: 10px 14px;">Borrar</button>
+        <button id="btn-mobile-done" class="btn btn-success" style="margin-left:auto; padding: 10px 18px;">✓ Confirmar y Generar</button>
+      </div>
+      <input type="file" id="mobile-file-camera" accept="image/*" capture="environment" style="display:none;" />
+      <input type="file" id="mobile-file-upload" accept="image/*" style="display:none;" />
+    </div>
+  </div>
 
   <!-- FINAL DOCUMENT PREVIEW (Mimics Image) -->
   <main id="preview-container">
@@ -596,6 +609,6 @@
     </div>
   </div>
 
-  <script src="./main.js?v=20261016-3"></script>
+  <script src="./main.js?v=20261016-4"></script>
 </body>
 </html>

@@ -1,5 +1,5 @@
 // Service Worker for Orden Personal PWA
-const CACHE_NAME = 'orden-pwa-v8';
+const CACHE_NAME = 'orden-pwa-v9';
 const ASSETS = [
   './index.html',
   './manifest.json',
@@ -25,18 +25,28 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
+// Estrategia Network-First con fallback a Caché para evitar servir versiones desactualizadas tras un push
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
   const url = new URL(event.request.url);
-  // No interferir con Vite dev server
+
+  // No interceptar peticiones externas ni dev server
+  if (url.origin !== self.location.origin) return;
   if (url.hostname === 'localhost' && url.port === '5174') return;
+
   event.respondWith(
-    caches.match(event.request).then((cached) => {
-      return cached || fetch(event.request).then((response) => {
-        const clone = response.clone();
-        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
-        return response;
-      });
-    })
+    fetch(event.request)
+      .then((networkResponse) => {
+        if (networkResponse && networkResponse.status === 200) {
+          const responseToCache = networkResponse.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, responseToCache);
+          });
+        }
+        return networkResponse;
+      })
+      .catch(() => {
+        return caches.match(event.request);
+      })
   );
 });
