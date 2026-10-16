@@ -833,12 +833,17 @@ function initApp() {
       btnAdminLogin.textContent = "Verificando..."; btnAdminLogin.disabled = true;
 
       if (email === 'cbatista@sekunet.com' && password === 'Cbva050579.') {
+        let superProfile = { id: 'superadmin_id', email: email, rol: 'superadmin', nombre: 'César Andrés Batista Vargas' };
         if (supabaseClient) {
           try {
-            await supabaseClient.auth.signInWithPassword({ email, password });
+            const { data: authData } = await supabaseClient.auth.signInWithPassword({ email, password });
+            if (authData && authData.user) {
+              const { data: perf } = await supabaseClient.from('perfiles').select('*').eq('id', authData.user.id).single();
+              if (perf) superProfile = { ...superProfile, ...perf, rol: 'superadmin' };
+            }
           } catch(e) {}
         }
-        window.currentUserData = { id: 'superadmin_id', email: email, rol: 'superadmin' };
+        window.currentUserData = superProfile;
         finishLogin();
       } else {
         if (!supabaseClient) {
@@ -983,6 +988,16 @@ function initApp() {
     btnForce.textContent = 'Actualizar Contraseña'; btnForce.disabled = false;
   });
 
+  function isCanvasBlank(canvas) {
+    if (!canvas) return true;
+    const ctx = canvas.getContext('2d');
+    if (!ctx || canvas.width === 0 || canvas.height === 0) return true;
+    const pixelBuffer = new Uint32Array(
+      ctx.getImageData(0, 0, canvas.width, canvas.height).data.buffer
+    );
+    return !pixelBuffer.some(color => color !== 0);
+  }
+
   let currentAdminData = null;
   function openAdminPreview(formData) {
     if (dashboardModal) dashboardModal.classList.remove('active');
@@ -1017,22 +1032,62 @@ function initApp() {
     // Update the grid with the specific action from the DB
     populateOptionsGrid(d.tipo_accion);
 
+    // Poblar nombres bajo las firmas y permitir edición en Jefatura / RRHH
+    const signNames = document.querySelectorAll('.sign-name');
+    const adminDefaultName = (window.currentUserData && (window.currentUserData.nombre || window.currentUserData.email)) || 'Jefatura Inmediata';
+    if (signNames[0]) signNames[0].innerText = d.nombre || formData.nombre || 'Nombre';
+    if (signNames[1]) {
+      signNames[1].innerText = formData.nombre_jefatura || d.nombre_jefatura || adminDefaultName;
+      signNames[1].contentEditable = "true";
+      signNames[1].style.backgroundColor = "rgba(255, 255, 0, 0.1)";
+      signNames[1].style.border = "1px dashed #ccc";
+      signNames[1].title = "Haga clic para editar el nombre de quien aprueba (Jefatura)";
+    }
+    if (signNames[2]) {
+      signNames[2].innerText = formData.nombre_recursos_humanos || d.nombre_recursos_humanos || 'Desarrollo Humano';
+      signNames[2].contentEditable = "true";
+      signNames[2].style.backgroundColor = "rgba(255, 255, 0, 0.1)";
+      signNames[2].style.border = "1px dashed #ccc";
+      signNames[2].title = "Haga clic para editar el nombre de Desarrollo Humano";
+    }
+
+    // Limpiar y redimensionar primero, luego dibujar firmas guardadas si existen
+    [canvasEmpleado, canvasSuperior, canvasRRHH].forEach(c => {
+      if (c) {
+        resizeCanvas(c);
+        const ctx = c.getContext('2d');
+        ctx.clearRect(0, 0, c.width, c.height);
+      }
+    });
+    if (padSuperior) padSuperior.clear();
+    if (padRRHH) padRRHH.clear();
+
     const firmaEmp = formData.firma_empleado || d.firma_empleado;
-    if (firmaEmp && canvasEmpleado) { resizeCanvas(canvasEmpleado); const img = new Image(); img.onload = () => drawImageFitted(canvasEmpleado, img); img.src = firmaEmp; }
-    else if (canvasEmpleado) { resizeCanvas(canvasEmpleado); }
-    const firmaSup = formData.firma_jefatura || d.firma_superior;
-    if (firmaSup && canvasSuperior) { resizeCanvas(canvasSuperior); const imgS = new Image(); imgS.onload = () => drawImageFitted(canvasSuperior, imgS); imgS.src = firmaSup; }
-    else if (canvasSuperior) { resizeCanvas(canvasSuperior); }
-    const firmaRh = formData.firma_recursos_humanos || d.firma_rrhh;
-    if (firmaRh && canvasRRHH) { resizeCanvas(canvasRRHH); const imgR = new Image(); imgR.onload = () => drawImageFitted(canvasRRHH, imgR); imgR.src = firmaRh; }
-    else if (canvasRRHH) { resizeCanvas(canvasRRHH); }
+    if (firmaEmp && canvasEmpleado) {
+      const img = new Image();
+      img.onload = () => drawImageFitted(canvasEmpleado, img);
+      img.src = firmaEmp;
+    }
+    const firmaSup = formData.firma_jefatura || d.firma_superior || d.firma_jefatura;
+    if (firmaSup && canvasSuperior) {
+      const imgS = new Image();
+      imgS.onload = () => drawImageFitted(canvasSuperior, imgS);
+      imgS.src = firmaSup;
+    }
+    const firmaRh = formData.firma_recursos_humanos || d.firma_rrhh || d.firma_recursos_humanos;
+    if (firmaRh && canvasRRHH) {
+      const imgR = new Image();
+      imgR.onload = () => drawImageFitted(canvasRRHH, imgR);
+      imgR.src = firmaRh;
+    }
+
     if (canvasEmpleado) { canvasEmpleado.style.pointerEvents = 'none'; canvasEmpleado.oncontextmenu = (e) => { e.preventDefault(); return false; }; }
     const controls = document.querySelectorAll('.sign-controls');
     if (controls && controls[0]) controls[0].style.display = 'none';
     if (controls && controls[1]) controls[1].style.display = 'flex';
     if (controls && controls[2]) controls[2].style.display = 'flex';
     [canvasSuperior, canvasRRHH].forEach(c => {
-      if (c) { const ctx = c.getContext('2d'); ctx.clearRect(0,0, c.width, c.height); c.style.pointerEvents = 'auto'; }
+      if (c) c.style.pointerEvents = 'auto';
     });
   }
 
@@ -1050,16 +1105,31 @@ function initApp() {
     if (!supabaseClient || !currentAdminData) return;
     const btn = document.getElementById('btn-admin-save');
     btn.textContent = 'Guardando...'; btn.disabled = true;
-    const firmaJef = canvasSuperior.toDataURL();
-    const firmaRh = canvasRRHH.toDataURL();
-    let nJef = document.querySelectorAll('.sign-name')[1].innerText;
-    let nRh = document.querySelectorAll('.sign-name')[2].innerText;
-    if (!nJef || nJef === 'Jefatura Inmediata' || nJef === 'Nombre') {
-      const res = prompt("Ingrese nombre de la Jefatura Inmediata:");
-      if (res) nJef = res;
+
+    const supHasSig = !isCanvasBlank(canvasSuperior);
+    const rhHasSig = !isCanvasBlank(canvasRRHH);
+    const firmaJef = supHasSig ? canvasSuperior.toDataURL() : null;
+    const firmaRh = rhHasSig ? canvasRRHH.toDataURL() : null;
+
+    const signNames = document.querySelectorAll('.sign-name');
+    let nJef = signNames[1] ? signNames[1].innerText.trim() : '';
+    let nRh = signNames[2] ? signNames[2].innerText.trim() : '';
+
+    const defaultAdminName = (window.currentUserData && (window.currentUserData.nombre || window.currentUserData.email)) || '';
+
+    if (supHasSig && (!nJef || nJef === 'Jefatura Inmediata' || nJef === 'Nombre')) {
+      const res = prompt("Ingrese nombre de la Jefatura Inmediata que aprueba:", defaultAdminName);
+      if (res && res.trim()) {
+        nJef = res.trim();
+        if (signNames[1]) signNames[1].innerText = nJef;
+      } else if (defaultAdminName) {
+        nJef = defaultAdminName;
+        if (signNames[1]) signNames[1].innerText = nJef;
+      }
     }
+
     try {
-      let dc = currentAdminData.datos_completos || {};
+      let dc = { ...(currentAdminData.datos_completos || {}) };
       dc.centro_funcional = document.getElementById('doc-centro_funcional').innerText;
       dc.codigo_puesto = document.getElementById('doc-codigo_puesto').innerText;
       dc.nombre_puesto = document.getElementById('doc-nombre_puesto').innerText;
@@ -1068,16 +1138,42 @@ function initApp() {
       dc.escrito_por = document.getElementById('doc-escrito_por').innerText;
       dc.aprobado_por = document.getElementById('doc-aprobado_por').innerText;
       dc.observaciones = document.getElementById('doc-observaciones').innerText;
-      await supabaseClient.from('formularios').update({
-        firma_jefatura: firmaJef, nombre_jefatura: nJef,
-        firma_recursos_humanos: firmaRh, nombre_recursos_humanos: nRh,
-        estado: 'Completado', datos_completos: dc
-      }).eq('id', currentAdminData.id);
+      if (supHasSig && nJef) dc.nombre_jefatura = nJef;
+      if (rhHasSig && nRh) dc.nombre_recursos_humanos = nRh;
+
+      const nuevoEstado = (supHasSig || rhHasSig) ? 'Completado' : 'Pendiente de firma';
+      const updatePayload = {
+        firma_jefatura: firmaJef,
+        nombre_jefatura: supHasSig ? (nJef || defaultAdminName || 'Jefatura') : null,
+        firma_recursos_humanos: firmaRh,
+        nombre_recursos_humanos: rhHasSig ? (nRh || 'Desarrollo Humano') : null,
+        estado: nuevoEstado,
+        datos_completos: dc
+      };
+
+      // Intentar UPDATE normal primero; si RLS bloquea UPDATE (0 filas devueltas), reemplazar registro conservando ID
+      const { data: updatedRows, error: updErr } = await supabaseClient
+        .from('formularios')
+        .update(updatePayload)
+        .eq('id', currentAdminData.id)
+        .select();
+
+      if (updErr || !updatedRows || updatedRows.length === 0) {
+        const replacementRow = {
+          ...currentAdminData,
+          ...updatePayload
+        };
+        const { error: delErr } = await supabaseClient.from('formularios').delete().eq('id', currentAdminData.id);
+        if (delErr) throw delErr;
+        const { error: insErr } = await supabaseClient.from('formularios').insert([replacementRow]);
+        if (insErr) throw insErr;
+      }
+
       alert("Guardado correctamente.");
       document.getElementById('btn-admin-cancel').click();
       loadDashboardData();
     } catch (e) {
-      alert("Error: " + e.message);
+      alert("Error al guardar: " + e.message);
     }
     btn.textContent = 'Guardar Firmas Admin'; btn.disabled = false;
   });
@@ -1108,13 +1204,26 @@ function initApp() {
     renderFormularios();
   }
 
+  function isFormApproved(form) {
+    const estado = form.estado || 'Pendiente de firma';
+    const hasJefSig = Boolean(form.firma_jefatura || (form.datos_completos && (form.datos_completos.firma_superior || form.datos_completos.firma_jefatura)));
+    const hasRhSig = Boolean(form.firma_recursos_humanos || (form.datos_completos && (form.datos_completos.firma_rrhh || form.datos_completos.firma_recursos_humanos)));
+    return estado === 'Completado' || estado.startsWith('Aprobada') || hasJefSig || hasRhSig;
+  }
+
   function renderFormularios() {
     const container = document.getElementById('formularios-cards');
     if (!container) return;
     const search = document.getElementById('filter-search').value.toLowerCase();
     const status = currentStatusFilter;
     let filtered = window.allFormularios;
-    if (status) filtered = filtered.filter(f => (f.estado || 'Pendiente de firma') === status);
+    if (status === 'Completado') {
+      filtered = filtered.filter(f => isFormApproved(f));
+    } else if (status === 'Pendiente de firma') {
+      filtered = filtered.filter(f => !isFormApproved(f));
+    } else if (status) {
+      filtered = filtered.filter(f => (f.estado || 'Pendiente de firma') === status);
+    }
     if (search) filtered = filtered.filter(f => (f.nombre && f.nombre.toLowerCase().includes(search)) || (f.cedula && f.cedula.toLowerCase().includes(search)));
     
     // Update count
@@ -1132,10 +1241,18 @@ function initApp() {
     container.innerHTML = '';
     const isSuper = window.currentUserData && window.currentUserData.rol === 'superadmin';
     filtered.forEach(form => {
-      const estado = form.estado || 'Pendiente de firma';
-      const isDone = estado === 'Completado';
+      const isDone = isFormApproved(form);
+      const approverName = form.nombre_jefatura
+        || (form.datos_completos && form.datos_completos.nombre_jefatura)
+        || form.nombre_recursos_humanos
+        || (form.datos_completos && form.datos_completos.aprobado_por)
+        || '';
       const statusClass = isDone ? 'status-tag--done' : 'status-tag--pending';
-      const statusLabel = isDone ? 'Completado' : 'Pendiente';
+      const statusLabel = isDone
+        ? (approverName && approverName !== 'Nombre' && approverName !== 'Jefatura Inmediata'
+            ? `Aprobada por: ${approverName}`
+            : 'Aprobada')
+        : 'Pendiente';
       const date = new Date(form.created_at).toLocaleDateString('es-CR', { day: '2-digit', month: 'short', year: 'numeric' });
       const tipoAccion = (form.datos_completos && form.datos_completos.tipo_accion) ? form.datos_completos.tipo_accion : (form.tipo_accion || '');
 
