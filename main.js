@@ -284,8 +284,9 @@ function initApp() {
     }
     if (stepIdx === 1) {
       const acc = document.getElementById('tipo_accion');
-      if (!acc.value) {
-        acc.classList.add('input-invalid');
+      if (!acc || !acc.value) {
+        if (acc) acc.classList.add('input-invalid');
+        document.getElementById('action-cards-list')?.classList.add('action-list-invalid');
         alert('Por favor seleccione el Tipo de Acción a tramitar.');
         return false;
       }
@@ -338,6 +339,153 @@ function initApp() {
       updateWizard();
     }
   });
+
+  // ==========================================================================
+  // SELECTOR TÁCTIL Y BUSCADOR DE TIPO DE ACCIÓN (Mobile-First)
+  // ==========================================================================
+  const ACCIONES_CONFIG = [
+    { value: 'VACACIONES ORDINARIAS', label: 'Vacaciones ordinarias', icon: '🏖️', cat: 'vacaciones', desc: 'Período ordinario de descanso anual', isFrequent: true },
+    { value: 'VACACIONES ADICIONALES', label: 'Vacaciones adicionales', icon: '🌴', cat: 'vacaciones', desc: 'Días adicionales de vacaciones', isFrequent: false },
+    { value: 'INCAPACIDAD C.C.S.S.', label: 'Incapacidad C.C.S.S.', icon: '🏥', cat: 'incapacidad', desc: 'Incapacidad médica por enfermedad común', isFrequent: true },
+    { value: 'INCAPACIDAD RIESGOS DEL INS', label: 'Incapacidad riesgos del INS', icon: '🛡️', cat: 'incapacidad', desc: 'Accidente de trabajo o laboral', isFrequent: false },
+    { value: 'INCAPACIDAD ACCIDENTE DE TRANSITO', label: 'Incapacidad accidente de tránsito', icon: '🚗', cat: 'incapacidad', desc: 'Accidente de tránsito / póliza SOA', isFrequent: false },
+    { value: 'INCAPACIDAD ATENC.FAMILIAR', label: 'Incapacidad atenc. familiar', icon: '👨‍👩‍👧', cat: 'incapacidad', desc: 'Cuidado de familiar en fase terminal / menor grave', isFrequent: false },
+    { value: 'PERMISO CON GOCE DE SALARIO', label: 'Permiso con goce de salario', icon: '✅', cat: 'permisos', desc: 'Permiso remunerado autorizado', isFrequent: true },
+    { value: 'PERMISO SIN GOCE DE SALARIO', label: 'Permiso sin goce de salario', icon: '⏸️', cat: 'permisos', desc: 'Permiso temporal no remunerado', isFrequent: false },
+    { value: 'LICENCIA POR MATERNIDAD', label: 'Licencia por maternidad', icon: '👶', cat: 'permisos', desc: 'Licencia de maternidad / paternidad', isFrequent: false },
+    { value: 'AUSENCIA', label: 'Ausencia', icon: '⏱️', cat: 'permisos', desc: 'Registro de ausencia justificada o injustificada', isFrequent: false },
+    { value: 'AUMENTO DE SALARIO', label: 'Aumento de salario', icon: '💰', cat: 'movimientos', desc: 'Ajuste salarial o incremento por mérito', isFrequent: true },
+    { value: 'ASCENSO', label: 'Ascenso', icon: '📈', cat: 'movimientos', desc: 'Promoción a nuevo puesto de mayor rango', isFrequent: false },
+    { value: 'CAMBIO DE HORARIO', label: 'Cambio de horario', icon: '🕐', cat: 'movimientos', desc: 'Modificación de jornada o turno laboral', isFrequent: false },
+    { value: 'NOMBRAMIENTO PERMANENTE', label: 'Nombramiento permanente', icon: '📋', cat: 'movimientos', desc: 'Contratación por tiempo indeterminado', isFrequent: false },
+    { value: 'NOMBRAMIENTO TEMPORAL', label: 'Nombramiento temporal', icon: '⏳', cat: 'movimientos', desc: 'Contratación por tiempo definido o proyecto', isFrequent: false },
+    { value: 'TRASLADO', label: 'Traslado', icon: '🔄', cat: 'movimientos', desc: 'Cambio de departamento o centro funcional', isFrequent: false },
+    { value: 'RENUNCIA', label: 'Renuncia', icon: '📄', cat: 'termino', desc: 'Dimisión voluntaria del colaborador', isFrequent: false },
+    { value: 'DESPIDO', label: 'Despido', icon: '🚪', cat: 'termino', desc: 'Cese laboral por decisión patronal', isFrequent: false },
+    { value: 'SUSPENSIÓN', label: 'Suspensión', icon: '⚠️', cat: 'termino', desc: 'Suspensión disciplinaria o temporal del contrato', isFrequent: false }
+  ];
+
+  const actionCardsList = document.getElementById('action-cards-list');
+  const actionSearchInput = document.getElementById('action-search-input');
+  const btnClearActionSearch = document.getElementById('btn-clear-action-search');
+  const actionCatChips = document.querySelectorAll('.action-cat-chip');
+  const actionSelectedPill = document.getElementById('action-selected-pill');
+  const tipoAccionSelect = document.getElementById('tipo_accion');
+
+  let currentActionCategory = 'all';
+  let currentActionSearchQuery = '';
+
+  function renderActionCards() {
+    if (!actionCardsList) return;
+    actionCardsList.innerHTML = '';
+    const selectedVal = tipoAccionSelect ? tipoAccionSelect.value : '';
+
+    const q = currentActionSearchQuery.trim().toLowerCase();
+    const filtered = ACCIONES_CONFIG.filter(item => {
+      if (currentActionCategory === 'frecuentes' && !item.isFrequent) return false;
+      if (currentActionCategory !== 'all' && currentActionCategory !== 'frecuentes' && item.cat !== currentActionCategory) return false;
+      if (q) {
+        const matchLabel = item.label.toLowerCase().includes(q);
+        const matchDesc = item.desc.toLowerCase().includes(q);
+        const matchVal = item.value.toLowerCase().includes(q);
+        if (!matchLabel && !matchDesc && !matchVal) return false;
+      }
+      return true;
+    });
+
+    if (filtered.length === 0) {
+      actionCardsList.innerHTML = `<div class="action-empty-state">No se encontraron acciones coincidentes con "${currentActionSearchQuery}".</div>`;
+      return;
+    }
+
+    filtered.forEach(item => {
+      const isSelected = item.value === selectedVal;
+      const card = document.createElement('div');
+      card.className = `action-card ${isSelected ? 'selected' : ''}`;
+      card.dataset.value = item.value;
+      card.dataset.label = item.label;
+      card.role = 'radio';
+      card.setAttribute('aria-checked', isSelected ? 'true' : 'false');
+      card.innerHTML = `
+        <div class="action-card-icon">${item.icon}</div>
+        <div class="action-card-body">
+          <div class="action-card-title">${item.label}</div>
+          <div class="action-card-desc">${item.desc}</div>
+        </div>
+        <div class="action-card-indicator"></div>
+      `;
+      card.addEventListener('click', () => {
+        selectActionType(item.value);
+      });
+      actionCardsList.appendChild(card);
+    });
+  }
+
+  function selectActionType(val) {
+    if (tipoAccionSelect) {
+      tipoAccionSelect.value = val;
+      tipoAccionSelect.classList.remove('input-invalid');
+    }
+    const found = ACCIONES_CONFIG.find(x => x.value === val);
+    if (actionSelectedPill) {
+      if (found) {
+        actionSelectedPill.style.display = 'inline-flex';
+        actionSelectedPill.innerHTML = `✓ ${found.label}`;
+      } else {
+        actionSelectedPill.style.display = 'none';
+      }
+    }
+    if (actionCardsList) {
+      actionCardsList.classList.remove('action-list-invalid');
+      const allCards = actionCardsList.querySelectorAll('.action-card');
+      allCards.forEach(c => {
+        const isMatch = c.dataset.value === val;
+        c.classList.toggle('selected', isMatch);
+        c.setAttribute('aria-checked', isMatch ? 'true' : 'false');
+      });
+    }
+    populateOptionsGrid(val);
+  }
+
+  if (actionSearchInput) {
+    actionSearchInput.addEventListener('input', (e) => {
+      currentActionSearchQuery = e.target.value;
+      if (btnClearActionSearch) {
+        btnClearActionSearch.style.display = currentActionSearchQuery ? 'flex' : 'none';
+      }
+      renderActionCards();
+    });
+  }
+
+  if (btnClearActionSearch) {
+    btnClearActionSearch.addEventListener('click', () => {
+      if (actionSearchInput) actionSearchInput.value = '';
+      currentActionSearchQuery = '';
+      btnClearActionSearch.style.display = 'none';
+      renderActionCards();
+      actionSearchInput?.focus();
+    });
+  }
+
+  if (actionCatChips) {
+    actionCatChips.forEach(chip => {
+      chip.addEventListener('click', () => {
+        actionCatChips.forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+        currentActionCategory = chip.dataset.cat || 'all';
+        renderActionCards();
+      });
+    });
+  }
+
+  if (tipoAccionSelect) {
+    tipoAccionSelect.addEventListener('change', () => {
+      selectActionType(tipoAccionSelect.value);
+    });
+  }
+
+  // Render inicial de tarjetas de acción
+  renderActionCards();
 
   // Búsqueda Hacienda con indicador visual y disparo inmediato al completar 9 dígitos
   const cedulaInput = document.getElementById('cedula');

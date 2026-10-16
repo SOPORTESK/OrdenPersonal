@@ -97,32 +97,55 @@
 
       <!-- Paso 2: Tipo de Acción -->
       <section class="step" id="step-2">
-        <h2>Tipo de Acción</h2>
-        <div class="form-group">
-          <label for="tipo_accion">Seleccione la acción a tramitar <span class="req-star">*</span></label>
-          <select id="tipo_accion">
-            <option value="">Seleccionar...</option>
-            <option value="ASCENSO">Ascenso</option>
-            <option value="AUMENTO DE SALARIO">Aumento de salario</option>
-            <option value="AUSENCIA">Ausencia</option>
-            <option value="CAMBIO DE HORARIO">Cambio de horario</option>
-            <option value="DESPIDO">Despido</option>
-            <option value="INCAPACIDAD C.C.S.S.">Incapacidad C.C.S.S.</option>
-            <option value="INCAPACIDAD ATENC.FAMILIAR">Incapacidad atenc. familiar</option>
-            <option value="INCAPACIDAD RIESGOS DEL INS">Incapacidad riesgos del INS</option>
-            <option value="INCAPACIDAD ACCIDENTE DE TRANSITO">Incapacidad accidente de transito</option>
-            <option value="LICENCIA POR MATERNIDAD">Licencia por maternidad</option>
-            <option value="NOMBRAMIENTO PERMANENTE">Nombramiento permanente</option>
-            <option value="NOMBRAMIENTO TEMPORAL">Nombramiento temporal</option>
-            <option value="PERMISO CON GOCE DE SALARIO">Permiso con goce de salario</option>
-            <option value="PERMISO SIN GOCE DE SALARIO">Permiso sin goce de salario</option>
-            <option value="RENUNCIA">Renuncia</option>
-            <option value="SUSPENSIÓN">Suspensión</option>
-            <option value="TRASLADO">Traslado</option>
-            <option value="VACACIONES ADICIONALES">Vacaciones adicionales</option>
-            <option value="VACACIONES ORDINARIAS">Vacaciones ordinarias</option>
-          </select>
+        <div class="step-header-row">
+          <h2>Tipo de Acción <span class="req-star">*</span></h2>
+          <span class="action-selected-pill" id="action-selected-pill" style="display:none;"></span>
         </div>
+
+        <div class="action-search-box">
+          <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+          </svg>
+          <input type="text" id="action-search-input" placeholder="Buscar acción (ej: Vacaciones, Incapacidad...)" autocomplete="off" />
+          <button type="button" id="btn-clear-action-search" class="btn-clear-search" style="display:none;" title="Limpiar búsqueda">✕</button>
+        </div>
+
+        <div class="action-categories-bar" id="action-categories-bar">
+          <button type="button" class="action-cat-chip active" data-cat="all">Todos (19)</button>
+          <button type="button" class="action-cat-chip" data-cat="frecuentes">⭐ Frecuentes</button>
+          <button type="button" class="action-cat-chip" data-cat="vacaciones">🏖️ Vacaciones</button>
+          <button type="button" class="action-cat-chip" data-cat="incapacidad">🏥 Incapacidades</button>
+          <button type="button" class="action-cat-chip" data-cat="permisos">📋 Permisos</button>
+          <button type="button" class="action-cat-chip" data-cat="movimientos">💼 Movimientos</button>
+          <button type="button" class="action-cat-chip" data-cat="termino">📄 Término</button>
+        </div>
+
+        <div class="action-cards-list" id="action-cards-list" role="radiogroup" aria-label="Tipos de acción">
+          <!-- Se renderiza dinámicamente con las 19 acciones -->
+        </div>
+
+        <select id="tipo_accion" style="display: none;" aria-hidden="true">
+          <option value="">Seleccionar...</option>
+          <option value="ASCENSO">Ascenso</option>
+          <option value="AUMENTO DE SALARIO">Aumento de salario</option>
+          <option value="AUSENCIA">Ausencia</option>
+          <option value="CAMBIO DE HORARIO">Cambio de horario</option>
+          <option value="DESPIDO">Despido</option>
+          <option value="INCAPACIDAD C.C.S.S.">Incapacidad C.C.S.S.</option>
+          <option value="INCAPACIDAD ATENC.FAMILIAR">Incapacidad atenc. familiar</option>
+          <option value="INCAPACIDAD RIESGOS DEL INS">Incapacidad riesgos del INS</option>
+          <option value="INCAPACIDAD ACCIDENTE DE TRANSITO">Incapacidad accidente de transito</option>
+          <option value="LICENCIA POR MATERNIDAD">Licencia por maternidad</option>
+          <option value="NOMBRAMIENTO PERMANENTE">Nombramiento permanente</option>
+          <option value="NOMBRAMIENTO TEMPORAL">Nombramiento temporal</option>
+          <option value="PERMISO CON GOCE DE SALARIO">Permiso con goce de salario</option>
+          <option value="PERMISO SIN GOCE DE SALARIO">Permiso sin goce de salario</option>
+          <option value="RENUNCIA">Renuncia</option>
+          <option value="SUSPENSIÓN">Suspensión</option>
+          <option value="TRASLADO">Traslado</option>
+          <option value="VACACIONES ADICIONALES">Vacaciones adicionales</option>
+          <option value="VACACIONES ORDINARIAS">Vacaciones ordinarias</option>
+        </select>
       </section>
 
       <!-- Paso 3: Fechas y Detalles -->
