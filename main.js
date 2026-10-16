@@ -54,6 +54,16 @@ try {
 }
 
 function initApp() {
+  // Restaurar sesión de administrador persistente en este dispositivo
+  try {
+    const savedSession = localStorage.getItem('sekunet_admin_session');
+    if (savedSession) {
+      window.currentUserData = JSON.parse(savedSession);
+    }
+  } catch(e) {
+    console.warn('Error al restaurar sesión previa:', e);
+  }
+
   // ==========================================
   // ACCESO AL PANEL DE ADMINISTRACIÓN
   // ==========================================
@@ -64,8 +74,7 @@ function initApp() {
 
   function openAdminLoginOrDashboard() {
     if (window.currentUserData && window.currentUserData.email) {
-      document.getElementById('admin-dashboard-modal')?.classList.add('active');
-      document.getElementById('admin-tab-bar')?.classList.add('visible');
+      finishLogin();
       loadDashboardData();
     } else {
       document.getElementById('admin-login-modal')?.classList.add('active');
@@ -1229,6 +1238,11 @@ function initApp() {
     const btnDeleteAll = document.getElementById('btn-delete-all-forms');
     const userIndicator = document.getElementById('admin-user-indicator');
 
+    // Persistir sesión de administrador (no volver a pedir contraseña en este navegador)
+    try {
+      localStorage.setItem('sekunet_admin_session', JSON.stringify(window.currentUserData));
+    } catch(e) {}
+
     if (userIndicator && window.currentUserData) {
       const displayUser = window.currentUserData.nombre || window.currentUserData.email || 'Administrador';
       const roleLabel = isSuper ? 'Superadmin' : 'Jefatura / RRHH';
@@ -1307,6 +1321,20 @@ function initApp() {
     document.getElementById('admin-tab-bar')?.classList.remove('visible');
     document.getElementById('fab-add-user')?.classList.remove('visible');
     document.getElementById('btn-delete-all-forms')?.style.setProperty('display', 'none');
+  });
+
+  document.getElementById('btn-admin-logout')?.addEventListener('click', async () => {
+    if (!confirm('¿Desea cerrar la sesión de administrador en este dispositivo?')) return;
+    localStorage.removeItem('sekunet_admin_session');
+    window.currentUserData = null;
+    if (supabaseClient) {
+      try { await supabaseClient.auth.signOut(); } catch(e) {}
+    }
+    dashboardModal?.classList.remove('active');
+    document.getElementById('admin-tab-bar')?.classList.remove('visible');
+    document.getElementById('fab-add-user')?.classList.remove('visible');
+    document.getElementById('btn-delete-all-forms')?.style.setProperty('display', 'none');
+    alert('Sesión cerrada correctamente.');
   });
 
   document.getElementById('btn-delete-all-forms')?.addEventListener('click', async () => {
